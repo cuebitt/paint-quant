@@ -8,6 +8,9 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   fmt: {},
-  lint: { options: { typeAware: true, typeCheck: true } },
+  lint: {
+    options: { typeAware: true, typeCheck: true },
+    env: { browser: true },
+  },
   plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
 });
