@@ -33,4 +33,8 @@ export default defineConfig({
     ignorePatterns: ["dist"],
   },
   plugins: [react(), tailwindcss()],
+  test: {
+    environment: "happy-dom",
+    include: ["src/**/*.{test,spec}.ts"],
+  },
 });

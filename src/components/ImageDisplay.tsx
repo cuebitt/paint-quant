@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { ImageIcon } from "lucide-react";
 
 interface ImageDisplayProps {
   imageUrl: string | null;
@@ -24,9 +25,16 @@ export function ImageDisplay({
   return (
     <Card className={className}>
       <CardContent className="pt-(--card-spacing)">
-        <h3 className="mb-3 text-sm font-semibold text-foreground">{title}</h3>
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <ImageIcon className="size-4 text-accent" />
+          {title}
+        </h3>
         <div className="relative overflow-hidden rounded-xl border border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
-          <img src={imageUrl} alt={title} className="image-rendering-pixelated h-auto w-full" />
+          <img
+            src={imageUrl}
+            alt={`${title} — quantized image preview`}
+            className="image-rendering-pixelated h-auto w-full"
+          />
           {showGrid && (
             <div
               className="pointer-events-none absolute inset-0 z-10"

@@ -1,116 +1,284 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { PaintBucketIcon } from "lucide-react";
-import { quantize, type QuantMethod } from "./quantize";
-import {
-  preprocessImageForCanvas,
-  serializeQuantizedImage,
-  type CanvasType,
-  CANVAS_TYPES,
-} from "./utils";
+import { useReducer, useEffect, useRef, useCallback } from "react";
+import { PaintBucketIcon, HeartIcon } from "lucide-react";
+import type { QuantMethod } from "./quantize";
+import { preprocessImageForCanvas, preprocessForDisplay } from "./preprocess";
+import { serializeQuantizedImage } from "./serialize";
+import type { CanvasType, ImageFitMode } from "./types";
+import type { RGB } from "./palette";
+import { CANVAS_TYPES } from "./types";
 import { UploadDropzone } from "./components/UploadDropzone";
 import { CanvasSelector } from "./components/CanvasSelector";
 import { Toolbar } from "./components/Toolbar";
 import { ImageComparison } from "./components/ImageComparison";
 import { PalettesSection } from "./components/PalettesSection";
-import { ModeToggle } from "./components/mode-toggle";
+import { ModeToggle } from "./components/ModeToggle";
+
+interface AppState {
+  originalUrl: string | null;
+  preprocessedUrl: string | null;
+  processedImageUrl: string | null;
+  quantizedUrl: string | null;
+  adaptivePalette: readonly RGB[];
+  loading: boolean;
+  error: string | null;
+  selectedCanvas: CanvasType;
+  showGrid: boolean;
+  quantMethod: QuantMethod;
+  fitMode: ImageFitMode;
+  paddingColor: RGB;
+}
+
+type AppAction =
+  | { type: "SET_ORIGINAL"; url: string }
+  | {
+      type: "SET_RESULT";
+      preprocessed: string;
+      processed: string;
+      adaptive: readonly RGB[];
+    }
+  | { type: "SET_LOADING"; loading: boolean }
+  | { type: "SET_ERROR"; error: string | null }
+  | { type: "SET_CANVAS"; canvas: CanvasType }
+  | { type: "SET_SHOW_GRID"; show: boolean }
+  | { type: "SET_QUANT_METHOD"; method: QuantMethod }
+  | { type: "SET_FIT_MODE"; mode: ImageFitMode }
+  | { type: "SET_PADDING_COLOR"; color: RGB }
+  | { type: "RESET" };
+
+const initialState: AppState = {
+  originalUrl: null,
+  preprocessedUrl: null,
+  processedImageUrl: null,
+  quantizedUrl: null,
+  adaptivePalette: [],
+  loading: false,
+  error: null,
+  selectedCanvas: CANVAS_TYPES[0],
+  showGrid: false,
+  quantMethod: "median-cut",
+  fitMode: "contain",
+  paddingColor: [255, 255, 255],
+};
+
+function appReducer(state: AppState, action: AppAction): AppState {
+  switch (action.type) {
+    case "SET_ORIGINAL":
+      return { ...state, originalUrl: action.url, error: null };
+    case "SET_RESULT":
+      return {
+        ...state,
+        preprocessedUrl: action.preprocessed,
+        processedImageUrl: action.processed,
+        quantizedUrl: action.processed,
+        adaptivePalette: action.adaptive,
+        loading: false,
+      };
+    case "SET_LOADING":
+      return { ...state, loading: action.loading };
+    case "SET_ERROR":
+      return { ...state, error: action.error, loading: false };
+    case "SET_CANVAS":
+      return { ...state, selectedCanvas: action.canvas };
+    case "SET_SHOW_GRID":
+      return { ...state, showGrid: action.show };
+    case "SET_QUANT_METHOD":
+      return { ...state, quantMethod: action.method };
+    case "SET_FIT_MODE":
+      return { ...state, fitMode: action.mode };
+    case "SET_PADDING_COLOR":
+      return { ...state, paddingColor: action.color };
+    case "RESET":
+      return initialState;
+  }
+}
 
 function App() {
-  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
-  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
-  const [quantizedUrl, setQuantizedUrl] = useState<string | null>(null);
-  const [adaptivePalette, setAdaptivePalette] = useState<readonly [number, number, number][]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedCanvas, setSelectedCanvas] = useState<CanvasType>(CANVAS_TYPES[0]);
-  const [showGrid, setShowGrid] = useState(false);
-  const [quantMethod, setQuantMethod] = useState<QuantMethod>("median-cut");
-
+  const [state, dispatch] = useReducer(appReducer, initialState);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const quantizedDataRef = useRef<{
     quantized: ImageData;
-    adaptivePalette: readonly [number, number, number][];
+    adaptivePalette: readonly RGB[];
   } | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const pendingPreprocessedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const worker = new Worker(new URL("./quantize.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    workerRef.current = worker;
+
+    worker.onmessage = (e: MessageEvent) => {
+      const msg = e.data;
+      if (msg.type === "error") {
+        dispatch({ type: "SET_ERROR", error: msg.message });
+        return;
+      }
+
+      if (msg.type === "result") {
+        const quantized = new ImageData(
+          new Uint8ClampedArray(msg.quantized.data),
+          msg.quantized.width,
+          msg.quantized.height,
+        );
+
+        quantizedDataRef.current = {
+          quantized,
+          adaptivePalette: msg.adaptivePalette,
+        };
+
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = msg.quantized.width;
+        tempCanvas.height = msg.quantized.height;
+        const tempCtx = tempCanvas.getContext("2d");
+        if (!tempCtx) {
+          dispatch({ type: "SET_ERROR", error: "Failed to get output canvas context" });
+          return;
+        }
+        tempCtx.putImageData(quantized, 0, 0);
+
+        dispatch({
+          type: "SET_RESULT",
+          preprocessed: pendingPreprocessedRef.current ?? "",
+          processed: tempCanvas.toDataURL(),
+          adaptive: msg.adaptivePalette,
+        });
+        pendingPreprocessedRef.current = null;
+      }
+    };
+
+    worker.onerror = () => {
+      dispatch({ type: "SET_ERROR", error: "Worker error" });
+    };
+
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, []);
 
   const processImage = useCallback(
-    (img: HTMLImageElement, canvas: CanvasType, method: QuantMethod) => {
-      const processedData = preprocessImageForCanvas(img, canvas);
-      const result = quantize(processedData, method);
+    (
+      img: HTMLImageElement,
+      canvas: CanvasType,
+      method: QuantMethod,
+      mode: ImageFitMode,
+      padding: RGB,
+    ) => {
+      try {
+        const processedData = preprocessImageForCanvas(img, canvas, mode, padding);
+        const displayData = preprocessForDisplay(img, canvas, mode, padding);
 
-      quantizedDataRef.current = {
-        quantized: result.quantized,
-        adaptivePalette: result.adaptivePalette,
-      };
+        const preCanvas = document.createElement("canvas");
+        preCanvas.width = displayData.width;
+        preCanvas.height = displayData.height;
+        const preCtx = preCanvas.getContext("2d");
+        if (!preCtx) throw new Error("Failed to get display canvas context");
+        preCtx.putImageData(displayData, 0, 0);
 
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext("2d")!;
-      tempCtx.putImageData(result.quantized, 0, 0);
+        pendingPreprocessedRef.current = preCanvas.toDataURL();
 
-      const dataUrl = tempCanvas.toDataURL();
-      setProcessedImageUrl(dataUrl);
-      setQuantizedUrl(dataUrl);
-      setAdaptivePalette(result.adaptivePalette);
-      setLoading(false);
+        if (!workerRef.current) {
+          dispatch({ type: "SET_ERROR", error: "Worker not initialized" });
+          return;
+        }
+
+        workerRef.current.postMessage({
+          type: "quantize",
+          imageData: {
+            data: new Uint8ClampedArray(processedData.data),
+            width: processedData.width,
+            height: processedData.height,
+          },
+          method,
+        });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: err instanceof Error ? err.message : "Failed to process image",
+        });
+      }
     },
     [],
   );
 
-  const handleUpload = (file: File) => {
-    setLoading(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        originalImageRef.current = img;
-        setOriginalUrl(reader.result as string);
-        processImage(img, selectedCanvas, quantMethod);
+  const handleUpload = useCallback(
+    (file: File) => {
+      dispatch({ type: "SET_LOADING", loading: true });
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          originalImageRef.current = img;
+          dispatch({ type: "SET_ORIGINAL", url: reader.result as string });
+          processImage(
+            img,
+            state.selectedCanvas,
+            state.quantMethod,
+            state.fitMode,
+            state.paddingColor,
+          );
+        };
+        img.onerror = () => {
+          dispatch({ type: "SET_ERROR", error: "Failed to load image" });
+        };
+        img.src = reader.result as string;
       };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  };
+      reader.onerror = () => {
+        dispatch({ type: "SET_ERROR", error: "Failed to read file" });
+      };
+      reader.readAsDataURL(file);
+    },
+    [state.selectedCanvas, state.quantMethod, state.fitMode, state.paddingColor, processImage],
+  );
 
   useEffect(() => {
-    if (originalImageRef.current && originalUrl) {
-      setLoading(true);
-      processImage(originalImageRef.current, selectedCanvas, quantMethod);
+    if (originalImageRef.current && state.originalUrl) {
+      dispatch({ type: "SET_LOADING", loading: true });
+      processImage(
+        originalImageRef.current,
+        state.selectedCanvas,
+        state.quantMethod,
+        state.fitMode,
+        state.paddingColor,
+      );
     }
-  }, [selectedCanvas, originalUrl, quantMethod, processImage]);
-
-  const handleReset = useCallback(() => {
-    originalImageRef.current = null;
-    quantizedDataRef.current = null;
-    setOriginalUrl(null);
-    setProcessedImageUrl(null);
-    setQuantizedUrl(null);
-    setAdaptivePalette([]);
-    setLoading(false);
-  }, []);
+  }, [
+    state.selectedCanvas,
+    state.originalUrl,
+    state.quantMethod,
+    state.fitMode,
+    state.paddingColor,
+    processImage,
+  ]);
 
   const handleExport = useCallback(() => {
     if (!quantizedDataRef.current) return;
     const json = serializeQuantizedImage({
       quantized: quantizedDataRef.current.quantized,
       adaptivePalette: quantizedDataRef.current.adaptivePalette,
-      canvasType: selectedCanvas,
+      canvasType: state.selectedCanvas,
     });
-    void navigator.clipboard.writeText(JSON.stringify(json, null, 2));
-  }, [selectedCanvas]);
+    navigator.clipboard.writeText(JSON.stringify(json, null, 2)).catch(() => {
+      dispatch({ type: "SET_ERROR", error: "Failed to copy to clipboard" });
+    });
+  }, [state.selectedCanvas]);
 
-  const hasResults = originalUrl && processedImageUrl && quantizedUrl;
+  const hasResults =
+    state.originalUrl && state.preprocessedUrl && state.processedImageUrl && state.quantizedUrl;
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-accent/10 p-2">
-              <PaintBucketIcon className="size-6 text-foreground" aria-hidden="true" />
+            <div className="rounded-lg bg-accent p-2">
+              <PaintBucketIcon className="size-6 text-accent-foreground" aria-hidden="true" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">paint-quant</h1>
               <p className="text-xs text-muted-foreground">
-                Quantize images to 32 colors (16 fixed + 16 adaptive)
+                Quantize images to 28 colors (16 fixed + 12 adaptive)
               </p>
             </div>
             <div className="ml-auto">
@@ -121,9 +289,15 @@ function App() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {state.error && (
+          <div className="mx-auto mb-6 max-w-2xl rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+            {state.error}
+          </div>
+        )}
+
         {!hasResults ? (
           <div className="mx-auto max-w-2xl">
-            <UploadDropzone onUpload={handleUpload} loading={loading} />
+            <UploadDropzone onUpload={handleUpload} loading={state.loading} />
             <p className="mt-4 text-center text-sm text-muted-foreground">
               Maximum file size: 10MB. Supported formats: PNG, JPG, WEBP, GIF
             </p>
@@ -132,37 +306,43 @@ function App() {
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <CanvasSelector
-                selectedCanvas={selectedCanvas}
-                onChange={setSelectedCanvas}
-                disabled={loading}
+                selectedCanvas={state.selectedCanvas}
+                onChange={(canvas) => dispatch({ type: "SET_CANVAS", canvas })}
+                disabled={state.loading}
               />
               <Toolbar
-                showGrid={showGrid}
-                onToggleGrid={() => setShowGrid(!showGrid)}
+                showGrid={state.showGrid}
+                onToggleGrid={() => dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid })}
                 onExport={handleExport}
-                onReset={handleReset}
-                quantMethod={quantMethod}
-                onQuantMethodChange={setQuantMethod}
-                disabled={loading}
+                onReset={() => dispatch({ type: "RESET" })}
+                quantMethod={state.quantMethod}
+                onQuantMethodChange={(method) => dispatch({ type: "SET_QUANT_METHOD", method })}
+                fitMode={state.fitMode}
+                onFitModeChange={(mode) => dispatch({ type: "SET_FIT_MODE", mode })}
+                paddingColor={state.paddingColor}
+                onPaddingColorChange={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
+                disabled={state.loading}
               />
             </div>
 
             <ImageComparison
-              originalUrl={originalUrl}
-              quantizedUrl={quantizedUrl}
-              showGrid={showGrid}
-              cellsX={selectedCanvas.cellsX}
-              cellsY={selectedCanvas.cellsY}
+              originalUrl={state.preprocessedUrl}
+              quantizedUrl={state.quantizedUrl}
+              showGrid={state.showGrid}
+              cellsX={state.selectedCanvas.cellsX}
+              cellsY={state.selectedCanvas.cellsY}
             />
 
-            <PalettesSection adaptivePalette={adaptivePalette} />
+            <PalettesSection adaptivePalette={state.adaptivePalette} />
           </div>
         )}
       </main>
 
       <footer className="border-t border-border bg-background/80">
         <div className="mx-auto max-w-7xl px-4 py-4 text-center text-sm text-muted-foreground sm:px-6 lg:px-8">
-          paint-quant — Built with React + shadcn/ui + TailwindCSS
+          paint-quant — Built with{" "}
+          <HeartIcon className="mx-0.5 inline-block size-3.5 text-accent" /> React + shadcn/ui +
+          TailwindCSS
         </div>
       </footer>
     </div>

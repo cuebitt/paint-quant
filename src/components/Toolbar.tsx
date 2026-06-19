@@ -1,9 +1,13 @@
 import type { QuantMethod } from "../quantize";
+import type { ImageFitMode } from "../types";
+import type { RGB } from "../palette";
 import { QuantMethodSelector } from "./QuantMethodSelector";
+import { FitModeSelector } from "./FitModeSelector";
+import { PaddingColorPicker } from "./PaddingColorPicker";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ClipboardCopyIcon, UploadIcon } from "lucide-react";
+import { ClipboardCopyIcon, UploadIcon, Grid3x3Icon } from "lucide-react";
 
 interface ToolbarProps {
   showGrid: boolean;
@@ -12,6 +16,10 @@ interface ToolbarProps {
   onReset: () => void;
   quantMethod: QuantMethod;
   onQuantMethodChange: (method: QuantMethod) => void;
+  fitMode: ImageFitMode;
+  onFitModeChange: (mode: ImageFitMode) => void;
+  paddingColor: RGB;
+  onPaddingColorChange: (color: RGB) => void;
   disabled?: boolean;
 }
 
@@ -22,34 +30,47 @@ export function Toolbar({
   onReset,
   quantMethod,
   onQuantMethodChange,
+  fitMode,
+  onFitModeChange,
+  paddingColor,
+  onPaddingColorChange,
   disabled = false,
 }: ToolbarProps) {
   return (
-    <div className="flex items-center gap-3">
-      <QuantMethodSelector
-        selectedMethod={quantMethod}
-        onChange={onQuantMethodChange}
-        disabled={disabled}
-      />
-      <div className="flex items-center gap-2">
-        <Switch
-          id="grid-toggle"
-          checked={showGrid}
-          onCheckedChange={onToggleGrid}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <QuantMethodSelector
+          selectedMethod={quantMethod}
+          onChange={onQuantMethodChange}
           disabled={disabled}
         />
-        <Label htmlFor="grid-toggle" className="text-sm">
-          Show Grid
-        </Label>
+        <FitModeSelector selectedMode={fitMode} onChange={onFitModeChange} disabled={disabled} />
+        <div className="flex items-center gap-2">
+          <Switch
+            id="grid-toggle"
+            checked={showGrid}
+            onCheckedChange={onToggleGrid}
+            disabled={disabled}
+          />
+          <Label htmlFor="grid-toggle" className="flex items-center gap-1.5 text-sm">
+            <Grid3x3Icon className="size-3.5 text-muted-foreground" />
+            Show Grid
+          </Label>
+        </div>
+        <Button variant="default" onClick={onExport} disabled={disabled}>
+          <ClipboardCopyIcon data-icon="inline-start" />
+          Copy JSON
+        </Button>
+        <Button variant="outline" onClick={onReset} disabled={disabled}>
+          <UploadIcon data-icon="inline-start" />
+          Upload new
+        </Button>
       </div>
-      <Button variant="outline" onClick={onExport} disabled={disabled}>
-        <ClipboardCopyIcon data-icon="inline-start" />
-        Copy JSON
-      </Button>
-      <Button variant="outline" onClick={onReset} disabled={disabled}>
-        <UploadIcon data-icon="inline-start" />
-        Upload new
-      </Button>
+      <PaddingColorPicker
+        selectedColor={paddingColor}
+        onChange={onPaddingColorChange}
+        disabled={disabled}
+      />
     </div>
   );
 }

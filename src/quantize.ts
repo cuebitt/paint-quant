@@ -6,27 +6,7 @@ import {
   type ImageQuantization,
   type PaletteQuantization,
 } from "image-q";
-
-type RGB = [number, number, number];
-
-const FIXED_PALETTE: RGB[] = [
-  [249, 255, 254],
-  [249, 128, 29],
-  [199, 78, 189],
-  [58, 179, 218],
-  [254, 216, 61],
-  [128, 199, 31],
-  [243, 139, 170],
-  [71, 79, 82],
-  [157, 157, 151],
-  [22, 156, 156],
-  [137, 50, 184],
-  [60, 68, 170],
-  [131, 84, 50],
-  [94, 124, 22],
-  [176, 46, 38],
-  [29, 29, 33],
-];
+import { FIXED_PALETTE, findNearestPaletteColor, type RGB } from "./palette";
 
 export const FIXED_PALETTE_COLORS: readonly RGB[] = FIXED_PALETTE;
 
@@ -102,21 +82,7 @@ function quantizeLegacy(imageData: ImageData): QuantizeResult {
   const output = new ImageData(width, height);
 
   for (let i = 0; i < data.length; i += 4) {
-    const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
-
-    let bestIdx = 0;
-    let bestDist = Infinity;
-    for (let j = 0; j < combined.length; j++) {
-      const dr = r - combined[j][0];
-      const dg = g - combined[j][1];
-      const db = b - combined[j][2];
-      const dist = dr * dr + dg * dg + db * db;
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIdx = j;
-      }
-    }
-
+    const bestIdx = findNearestPaletteColor(data[i], data[i + 1], data[i + 2], combined);
     output.data[i] = combined[bestIdx][0];
     output.data[i + 1] = combined[bestIdx][1];
     output.data[i + 2] = combined[bestIdx][2];

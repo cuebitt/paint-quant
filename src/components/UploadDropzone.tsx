@@ -47,6 +47,13 @@ export function UploadDropzone({
     fileInputRef.current?.click();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openFileDialog();
+    }
+  };
+
   return (
     <Card
       className={cn(
@@ -59,6 +66,7 @@ export function UploadDropzone({
       onDragOver={handleDrag}
       onDrop={handleDrop}
       onClick={openFileDialog}
+      onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
       aria-label="Upload image"
@@ -73,8 +81,10 @@ export function UploadDropzone({
       />
 
       <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-12 text-center">
-        <div className={cn("mb-4 rounded-full p-4", isDragActive ? "bg-accent/10" : "bg-muted")}>
-          <UploadIcon className="size-8 text-foreground" />
+        <div
+          className={cn("mb-4 rounded-full p-4", isDragActive ? "bg-accent/20" : "bg-accent/10")}
+        >
+          <UploadIcon className="size-8 text-accent" />
         </div>
 
         <h3 className="mb-1 text-lg font-semibold text-foreground">
@@ -94,7 +104,7 @@ export function UploadDropzone({
 
         {loading && (
           <div className="mt-6 flex items-center gap-3">
-            <Loader2Icon className="size-5 animate-spin text-foreground" />
+            <Loader2Icon className="size-5 animate-spin text-accent" />
             <span className="text-sm text-muted-foreground">Processing...</span>
           </div>
         )}

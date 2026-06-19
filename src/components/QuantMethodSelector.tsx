@@ -1,4 +1,5 @@
 import type { QuantMethod } from "../quantize";
+import { SparklesIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,7 +28,10 @@ export function QuantMethodSelector({
 }: QuantMethodSelectorProps) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-medium whitespace-nowrap text-foreground">Method:</span>
+      <span className="flex items-center gap-1.5 text-sm font-medium whitespace-nowrap text-foreground">
+        <SparklesIcon className="size-4 text-accent" />
+        Method:
+      </span>
       <Select
         value={selectedMethod}
         onValueChange={(value) => onChange(value as QuantMethod)}

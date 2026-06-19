@@ -1,75 +1,97 @@
-# React + TypeScript + Vite
+# paint-quant
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser-based pixel art tool that quantizes images down to 28 colors (16 fixed palette + 12 adaptive) and exports the result as a JSON spec.
 
-Currently, two official plugins are available:
+Upload an image, pick a canvas size, adjust the fit and padding, then export the quantized result.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Image quantization** using Median Cut, NeuQuant, or WuQuant algorithms (via [image-q](https://github.com/ImgPix/image-q))
+- **10 canvas presets** from 16x16 to 64x64, in various aspect ratios
+- **3 fit modes** — contain (fit within), fill by width, or fill by height
+- **Padding color picker** — choose any of the 16 fixed palette colors as the background
+- **8 accent colors** — Orange, Rose, Yellow, Green, Teal, Blue, Violet, Pink
+- **Light / Dark / System** theme toggle
+- **Grid overlay** to preview pixel boundaries
+- **Copy JSON** — exports the quantized image as a JSON spec to your clipboard
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Getting started
 
-Note: This will impact Vite dev & build performances.
+```bash
+# Install dependencies
+vp install
 
-## Expanding the ESLint configuration
+# Start dev server
+vp dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Type check + lint
+vp check
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+# Fix formatting and lint issues
+vp check --fix
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Run tests
+vp test
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+# Run tests in watch mode
+vp test watch
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project structure
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
-
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
 ```
+src/
+├── palette.ts            # Fixed palette (16 colors), RGB type, nearest-color lookup
+├── types.ts              # CanvasType, ImageFitMode, canvas presets
+├── preprocess.ts         # Image resizing/fitting into canvas dimensions
+├── quantize.ts           # Median Cut, NeuQuant, WuQuant quantization
+├── quantize.worker.ts    # Web worker for off-main-thread quantization
+├── serialize.ts          # Serializes quantized image to JSON spec
+├── App.tsx               # Main app (useReducer state management)
+├── main.tsx              # React entry point
+├── index.tailwind.css    # Tailwind theme (colors, dark mode, accent)
+├── __tests__/
+│   ├── palette.test.ts   # Tests for color distance and nearest-color lookup
+│   ├── quantize.test.ts  # Tests for quantization algorithms
+│   └── serialize.test.ts # Tests for JSON serialization
+└── components/
+    ├── CanvasSelector.tsx
+    ├── FitModeSelector.tsx
+    ├── PaddingColorPicker.tsx
+    ├── QuantMethodSelector.tsx
+    ├── Toolbar.tsx
+    ├── ImageComparison.tsx
+    ├── ImageDisplay.tsx
+    ├── PalettesSection.tsx
+    ├── PaletteDisplay.tsx
+    ├── UploadDropzone.tsx
+    ├── ModeToggle.tsx
+    ├── ThemeProvider.tsx
+    └── ui/               # shadcn/ui primitives
+```
+
+## Exported JSON format
+
+```json
+{
+  "version": 1,
+  "canvasType": "SMALL",
+  "palette": [[r, g, b], ...],
+  "pixels": "FEDCBA9876543210..."
+}
+```
+
+- `canvasType` — maps to a canvas preset (`SMALL`, `LONG`, `TALL`, `LARGE`, etc.)
+- `palette` — up to 12 adaptive RGB colors
+- `pixels` — one character per pixel, referencing the 16 fixed palette (`0`-`F`) or the adaptive palette (`G`-`R`)
+
+## Tech stack
+
+- React 19 + TypeScript
+- Vite (via [Vite+](https://viteplus.dev))
+- TailwindCSS v4
+- [shadcn/ui](https://ui.shadcn.com) components
+- [image-q](https://github.com/ImgPix/image-q) for quantization
+- [lucide-react](https://lucide.dev) icons
+- [Vitest](https://vitest.dev) for testing
+- Web Workers for off-main-thread quantization

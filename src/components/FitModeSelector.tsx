@@ -1,5 +1,5 @@
-import { type CanvasType, CANVAS_TYPES } from "../types";
-import { Grid3x3Icon } from "lucide-react";
+import { type ImageFitMode, FIT_MODES } from "../types";
+import { Maximize2Icon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,29 +9,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface CanvasSelectorProps {
-  selectedCanvas: CanvasType;
-  onChange: (canvas: CanvasType) => void;
+interface FitModeSelectorProps {
+  selectedMode: ImageFitMode;
+  onChange: (mode: ImageFitMode) => void;
   disabled?: boolean;
 }
 
-export function CanvasSelector({
-  selectedCanvas,
+export function FitModeSelector({
+  selectedMode,
   onChange,
   disabled = false,
-}: CanvasSelectorProps) {
+}: FitModeSelectorProps) {
   return (
     <div className="flex items-center gap-3">
       <span className="flex items-center gap-1.5 text-sm font-medium whitespace-nowrap text-foreground">
-        <Grid3x3Icon className="size-4 text-accent" />
-        Canvas:
+        <Maximize2Icon className="size-4 text-accent" />
+        Fit:
       </span>
       <Select
-        value={selectedCanvas.name}
-        onValueChange={(value) => {
-          const canvas = CANVAS_TYPES.find((c) => c.name === value);
-          if (canvas) onChange(canvas);
-        }}
+        value={selectedMode}
+        onValueChange={(value) => onChange(value as ImageFitMode)}
         disabled={disabled}
       >
         <SelectTrigger className="min-w-45">
@@ -39,9 +36,9 @@ export function CanvasSelector({
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {CANVAS_TYPES.map((canvas) => (
-              <SelectItem key={canvas.name} value={canvas.name}>
-                {canvas.name}
+            {FIT_MODES.map((mode) => (
+              <SelectItem key={mode.value} value={mode.value}>
+                {mode.label}
               </SelectItem>
             ))}
           </SelectGroup>

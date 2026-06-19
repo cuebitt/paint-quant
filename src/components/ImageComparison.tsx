@@ -20,7 +20,7 @@ export function ImageComparison({
       <ImageDisplay imageUrl={originalUrl} title="Original" className="flex-1" />
       <ImageDisplay
         imageUrl={quantizedUrl}
-        title="Quantized (32 colors)"
+        title="Quantized (28 colors)"
         showGrid={showGrid}
         cellsX={cellsX}
         cellsY={cellsY}

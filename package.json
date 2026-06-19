@@ -11,7 +11,9 @@
     "lint": "vp lint",
     "lint:fix": "vp lint --fix",
     "prepare": "vp config",
-    "preview": "vp preview"
+    "preview": "vp preview",
+    "test": "vp test",
+    "test:watch": "vp test watch"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -21,7 +23,6 @@
     "clsx": "^2.1.1",
     "image-q": "^4.0.0",
     "lucide-react": "^1.20.0",
-    "radix-ui": "^1.6.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "shadcn": "^4.11.0",
@@ -34,9 +35,11 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "happy-dom": "^20.10.6",
     "typescript": "~6.0.2",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vitest": "^4.1.9"
   },
   "packageManager": "pnpm@11.8.0"
 }
