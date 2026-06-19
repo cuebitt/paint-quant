@@ -1,0 +1,104 @@
+import { useRef, useState, type DragEvent, type ChangeEvent } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2Icon, UploadIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface UploadDropzoneProps {
+  onUpload: (file: File) => void;
+  loading?: boolean;
+  disabled?: boolean;
+}
+
+export function UploadDropzone({
+  onUpload,
+  loading = false,
+  disabled = false,
+}: UploadDropzoneProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDrag = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onUpload(e.target.files[0]);
+    }
+  };
+
+  const openFileDialog = () => {
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <Card
+      className={cn(
+        "relative cursor-pointer border-2 border-dashed transition-colors",
+        isDragActive ? "border-accent bg-accent/5" : "border-border hover:border-accent/50",
+        (disabled || loading) && "pointer-events-none opacity-50",
+      )}
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+      onClick={openFileDialog}
+      role="button"
+      tabIndex={0}
+      aria-label="Upload image"
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="absolute inset-0 cursor-pointer opacity-0"
+        disabled={disabled || loading}
+      />
+
+      <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-12 text-center">
+        <div className={cn("mb-4 rounded-full p-4", isDragActive ? "bg-accent/10" : "bg-muted")}>
+          <UploadIcon className="size-8 text-accent" />
+        </div>
+
+        <h3 className="mb-1 text-lg font-semibold text-foreground">
+          {isDragActive ? "Drop image here" : "Upload an image"}
+        </h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {isDragActive ? "Release to upload" : "Drag & drop or click to browse"}
+        </p>
+
+        <div className="flex items-center gap-2">
+          {["PNG", "JPG", "WEBP", "GIF"].map((ext) => (
+            <span key={ext} className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
+              {ext}
+            </span>
+          ))}
+        </div>
+
+        {loading && (
+          <div className="mt-6 flex items-center gap-3">
+            <Loader2Icon className="size-5 animate-spin text-accent" />
+            <span className="text-sm text-muted-foreground">Processing...</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

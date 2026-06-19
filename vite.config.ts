@@ -1,16 +1,36 @@
 import { defineConfig } from "vite-plus";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import babel from "@rolldown/plugin-babel";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   staged: {
     "*": "vp check --fix",
   },
-  fmt: {},
+  fmt: {
+    sortTailwindcss: {
+      stylesheet: "./src/index.tailwind.css",
+      functions: ["clsx", "cn"],
+      preserveWhitespace: true,
+    },
+  },
   lint: {
     options: { typeAware: true, typeCheck: true },
-    env: { browser: true },
+    plugins: ["oxc", "typescript", "unicorn", "react"],
+    categories: {
+      correctness: "warn",
+    },
+    env: {
+      builtin: true,
+      browser: true,
+    },
+    ignorePatterns: ["dist"],
   },
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
+  plugins: [react(), tailwindcss()],
 });
