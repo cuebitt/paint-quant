@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { PaintBucketIcon } from "lucide-react";
-import { quantize } from "./quantize";
+import { quantize, type QuantMethod } from "./quantize";
 import {
   preprocessImageForCanvas,
   serializeQuantizedImage,
@@ -12,6 +12,7 @@ import { CanvasSelector } from "./components/CanvasSelector";
 import { Toolbar } from "./components/Toolbar";
 import { ImageComparison } from "./components/ImageComparison";
 import { PalettesSection } from "./components/PalettesSection";
+import { ModeToggle } from "./components/mode-toggle";
 
 function App() {
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
@@ -20,7 +21,8 @@ function App() {
   const [adaptivePalette, setAdaptivePalette] = useState<readonly [number, number, number][]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCanvas, setSelectedCanvas] = useState<CanvasType>(CANVAS_TYPES[0]);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
+  const [quantMethod, setQuantMethod] = useState<QuantMethod>("median-cut");
 
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const quantizedDataRef = useRef<{
@@ -28,27 +30,30 @@ function App() {
     adaptivePalette: readonly [number, number, number][];
   } | null>(null);
 
-  const processImage = useCallback((img: HTMLImageElement, canvas: CanvasType) => {
-    const processedData = preprocessImageForCanvas(img, canvas);
-    const result = quantize(processedData);
+  const processImage = useCallback(
+    (img: HTMLImageElement, canvas: CanvasType, method: QuantMethod) => {
+      const processedData = preprocessImageForCanvas(img, canvas);
+      const result = quantize(processedData, method);
 
-    quantizedDataRef.current = {
-      quantized: result.quantized,
-      adaptivePalette: result.adaptivePalette,
-    };
+      quantizedDataRef.current = {
+        quantized: result.quantized,
+        adaptivePalette: result.adaptivePalette,
+      };
 
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext("2d")!;
-    tempCtx.putImageData(result.quantized, 0, 0);
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext("2d")!;
+      tempCtx.putImageData(result.quantized, 0, 0);
 
-    const dataUrl = tempCanvas.toDataURL();
-    setProcessedImageUrl(dataUrl);
-    setQuantizedUrl(dataUrl);
-    setAdaptivePalette(result.adaptivePalette);
-    setLoading(false);
-  }, []);
+      const dataUrl = tempCanvas.toDataURL();
+      setProcessedImageUrl(dataUrl);
+      setQuantizedUrl(dataUrl);
+      setAdaptivePalette(result.adaptivePalette);
+      setLoading(false);
+    },
+    [],
+  );
 
   const handleUpload = (file: File) => {
     setLoading(true);
@@ -58,7 +63,7 @@ function App() {
       img.onload = () => {
         originalImageRef.current = img;
         setOriginalUrl(reader.result as string);
-        processImage(img, selectedCanvas);
+        processImage(img, selectedCanvas, quantMethod);
       };
       img.src = reader.result as string;
     };
@@ -68,9 +73,9 @@ function App() {
   useEffect(() => {
     if (originalImageRef.current && originalUrl) {
       setLoading(true);
-      processImage(originalImageRef.current, selectedCanvas);
+      processImage(originalImageRef.current, selectedCanvas, quantMethod);
     }
-  }, [selectedCanvas, originalUrl, processImage]);
+  }, [selectedCanvas, originalUrl, quantMethod, processImage]);
 
   const handleReset = useCallback(() => {
     originalImageRef.current = null;
@@ -100,13 +105,16 @@ function App() {
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-accent/10 p-2">
-              <PaintBucketIcon className="size-6 text-accent" aria-hidden="true" />
+              <PaintBucketIcon className="size-6 text-foreground" aria-hidden="true" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">paint-quant</h1>
               <p className="text-xs text-muted-foreground">
                 Quantize images to 32 colors (16 fixed + 16 adaptive)
               </p>
+            </div>
+            <div className="ml-auto">
+              <ModeToggle />
             </div>
           </div>
         </div>
@@ -133,6 +141,8 @@ function App() {
                 onToggleGrid={() => setShowGrid(!showGrid)}
                 onExport={handleExport}
                 onReset={handleReset}
+                quantMethod={quantMethod}
+                onQuantMethodChange={setQuantMethod}
                 disabled={loading}
               />
             </div>

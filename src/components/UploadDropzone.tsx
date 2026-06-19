@@ -74,7 +74,7 @@ export function UploadDropzone({
 
       <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-12 text-center">
         <div className={cn("mb-4 rounded-full p-4", isDragActive ? "bg-accent/10" : "bg-muted")}>
-          <UploadIcon className="size-8 text-accent" />
+          <UploadIcon className="size-8 text-foreground" />
         </div>
 
         <h3 className="mb-1 text-lg font-semibold text-foreground">
@@ -94,7 +94,7 @@ export function UploadDropzone({
 
         {loading && (
           <div className="mt-6 flex items-center gap-3">
-            <Loader2Icon className="size-5 animate-spin text-accent" />
+            <Loader2Icon className="size-5 animate-spin text-foreground" />
             <span className="text-sm text-muted-foreground">Processing...</span>
           </div>
         )}

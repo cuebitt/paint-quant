@@ -1,3 +1,5 @@
+import type { QuantMethod } from "../quantize";
+import { QuantMethodSelector } from "./QuantMethodSelector";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -8,6 +10,8 @@ interface ToolbarProps {
   onToggleGrid: () => void;
   onExport: () => void;
   onReset: () => void;
+  quantMethod: QuantMethod;
+  onQuantMethodChange: (method: QuantMethod) => void;
   disabled?: boolean;
 }
 
@@ -16,10 +20,17 @@ export function Toolbar({
   onToggleGrid,
   onExport,
   onReset,
+  quantMethod,
+  onQuantMethodChange,
   disabled = false,
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-3">
+      <QuantMethodSelector
+        selectedMethod={quantMethod}
+        onChange={onQuantMethodChange}
+        disabled={disabled}
+      />
       <div className="flex items-center gap-2">
         <Switch
           id="grid-toggle"
