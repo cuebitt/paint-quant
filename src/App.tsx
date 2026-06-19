@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { PaintBucketIcon } from "lucide-react";
 import { quantize } from "./quantize";
-import { preprocessImageForCanvas, type CanvasType, CANVAS_TYPES } from "./utils";
+import {
+  preprocessImageForCanvas,
+  serializeQuantizedImage,
+  type CanvasType,
+  CANVAS_TYPES,
+} from "./utils";
 import { UploadDropzone } from "./components/UploadDropzone";
 import { CanvasSelector } from "./components/CanvasSelector";
 import { Toolbar } from "./components/Toolbar";
@@ -18,10 +23,19 @@ function App() {
   const [showGrid, setShowGrid] = useState(true);
 
   const originalImageRef = useRef<HTMLImageElement | null>(null);
+  const quantizedDataRef = useRef<{
+    quantized: ImageData;
+    adaptivePalette: readonly [number, number, number][];
+  } | null>(null);
 
   const processImage = useCallback((img: HTMLImageElement, canvas: CanvasType) => {
     const processedData = preprocessImageForCanvas(img, canvas);
     const result = quantize(processedData);
+
+    quantizedDataRef.current = {
+      quantized: result.quantized,
+      adaptivePalette: result.adaptivePalette,
+    };
 
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = canvas.width;
@@ -57,6 +71,26 @@ function App() {
       processImage(originalImageRef.current, selectedCanvas);
     }
   }, [selectedCanvas, originalUrl, processImage]);
+
+  const handleReset = useCallback(() => {
+    originalImageRef.current = null;
+    quantizedDataRef.current = null;
+    setOriginalUrl(null);
+    setProcessedImageUrl(null);
+    setQuantizedUrl(null);
+    setAdaptivePalette([]);
+    setLoading(false);
+  }, []);
+
+  const handleExport = useCallback(() => {
+    if (!quantizedDataRef.current) return;
+    const json = serializeQuantizedImage({
+      quantized: quantizedDataRef.current.quantized,
+      adaptivePalette: quantizedDataRef.current.adaptivePalette,
+      canvasType: selectedCanvas,
+    });
+    void navigator.clipboard.writeText(JSON.stringify(json, null, 2));
+  }, [selectedCanvas]);
 
   const hasResults = originalUrl && processedImageUrl && quantizedUrl;
 
@@ -97,6 +131,8 @@ function App() {
               <Toolbar
                 showGrid={showGrid}
                 onToggleGrid={() => setShowGrid(!showGrid)}
+                onExport={handleExport}
+                onReset={handleReset}
                 disabled={loading}
               />
             </div>

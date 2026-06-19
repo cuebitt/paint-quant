@@ -29,7 +29,7 @@ export function ImageDisplay({
           <img src={imageUrl} alt={title} className="image-rendering-pixelated h-auto w-full" />
           {showGrid && (
             <div
-              className="pointer-events-none absolute inset-0 z-10 divide-x divide-y divide-black"
+              className="pointer-events-none absolute inset-0 z-10"
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${cellsX}, 1fr)`,
@@ -37,7 +37,7 @@ export function ImageDisplay({
               }}
             >
               {gridCells.map((_, i) => (
-                <div key={i} className="size-full bg-transparent" />
+                <div key={i} className="size-auto border border-black bg-transparent" />
               ))}
             </div>
           )}
