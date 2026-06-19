@@ -82,7 +82,10 @@ export function UploadDropzone({
 
       <CardHeader className="items-center text-center">
         <div
-          className={cn("mb-2 rounded-full p-4", isDragActive ? "bg-accent/20" : "bg-accent/10")}
+          className={cn(
+            "mx-auto mb-2 w-fit rounded-full p-4",
+            isDragActive ? "bg-accent/20" : "bg-accent/10",
+          )}
         >
           <UploadIcon className="size-8 text-accent" />
         </div>
