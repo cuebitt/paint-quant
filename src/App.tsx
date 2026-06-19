@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PaintBucketIcon } from "lucide-react";
 import { quantize } from "./quantize";
 import { preprocessImageForCanvas, type CanvasType, CANVAS_TYPES } from "./utils";
@@ -19,7 +19,7 @@ function App() {
 
   const originalImageRef = useRef<HTMLImageElement | null>(null);
 
-  const processImage = (img: HTMLImageElement, canvas: CanvasType) => {
+  const processImage = useCallback((img: HTMLImageElement, canvas: CanvasType) => {
     const processedData = preprocessImageForCanvas(img, canvas);
     const result = quantize(processedData);
 
@@ -34,7 +34,7 @@ function App() {
     setQuantizedUrl(dataUrl);
     setAdaptivePalette(result.adaptivePalette);
     setLoading(false);
-  };
+  }, []);
 
   const handleUpload = (file: File) => {
     setLoading(true);
@@ -56,7 +56,7 @@ function App() {
       setLoading(true);
       processImage(originalImageRef.current, selectedCanvas);
     }
-  }, [selectedCanvas, originalUrl]);
+  }, [selectedCanvas, originalUrl, processImage]);
 
   const hasResults = originalUrl && processedImageUrl && quantizedUrl;
 

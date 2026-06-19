@@ -34,11 +34,10 @@ export function ImageDisplay({
                 display: "grid",
                 gridTemplateColumns: `repeat(${cellsX}, 1fr)`,
                 gridTemplateRows: `repeat(${cellsY}, 1fr)`,
-                gap: "1px",
               }}
             >
               {gridCells.map((_, i) => (
-                <div key={i} className="size-full" />
+                <div key={i} className="size-full bg-transparent" />
               ))}
             </div>
           )}
