@@ -38,7 +38,7 @@ export function Toolbar({
 }: ToolbarProps) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <QuantMethodSelector
           selectedMethod={quantMethod}
           onChange={onQuantMethodChange}

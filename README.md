@@ -14,6 +14,7 @@ Upload an image, pick a canvas size, adjust the fit and padding, then export the
 - **Light / Dark / System** theme toggle
 - **Grid overlay** to preview pixel boundaries
 - **Copy JSON** — exports the quantized image as a JSON spec to your clipboard
+- **GitHub Pages** deployment via GitHub Actions
 
 ## Getting started
 
@@ -37,37 +38,29 @@ vp test
 vp test watch
 ```
 
+### Deploying to GitHub Pages
+
+The site deploys automatically on push to `main` via [GitHub Actions](.github/workflows/deploy.yml).
+
+To enable it, go to **Settings → Pages → Source** and select **GitHub Actions**.
+
 ## Project structure
 
 ```
 src/
-├── palette.ts            # Fixed palette (16 colors), RGB type, nearest-color lookup
+├── palette.ts            # Fixed palette, RGB type, nearest-color lookup
 ├── types.ts              # CanvasType, ImageFitMode, canvas presets
 ├── preprocess.ts         # Image resizing/fitting into canvas dimensions
 ├── quantize.ts           # Median Cut, NeuQuant, WuQuant quantization
 ├── quantize.worker.ts    # Web worker for off-main-thread quantization
 ├── serialize.ts          # Serializes quantized image to JSON spec
-├── App.tsx               # Main app (useReducer state management)
-├── main.tsx              # React entry point
-├── index.tailwind.css    # Tailwind theme (colors, dark mode, accent)
-├── __tests__/
-│   ├── palette.test.ts   # Tests for color distance and nearest-color lookup
-│   ├── quantize.test.ts  # Tests for quantization algorithms
-│   └── serialize.test.ts # Tests for JSON serialization
-└── components/
-    ├── CanvasSelector.tsx
-    ├── FitModeSelector.tsx
-    ├── PaddingColorPicker.tsx
-    ├── QuantMethodSelector.tsx
-    ├── Toolbar.tsx
-    ├── ImageComparison.tsx
-    ├── ImageDisplay.tsx
-    ├── PalettesSection.tsx
-    ├── PaletteDisplay.tsx
-    ├── UploadDropzone.tsx
-    ├── ModeToggle.tsx
-    ├── ThemeProvider.tsx
-    └── ui/               # shadcn/ui primitives
+├── lib/                  # Utilities (cn helper)
+├── __tests__/            # Vitest unit tests
+├── components/           # React components + shadcn/ui primitives
+└── App.tsx               # Main app (useReducer state management)
+
+.github/workflows/
+└── deploy.yml            # GitHub Pages deployment
 ```
 
 ## Exported JSON format
@@ -95,3 +88,4 @@ src/
 - [lucide-react](https://lucide.dev) icons
 - [Vitest](https://vitest.dev) for testing
 - Web Workers for off-main-thread quantization
+- [GitHub Actions](https://github.com/features/actions) for deployment

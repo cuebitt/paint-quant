@@ -1,5 +1,5 @@
 import { useRef, useState, type DragEvent, type ChangeEvent } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2Icon, UploadIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -80,20 +80,21 @@ export function UploadDropzone({
         disabled={disabled || loading}
       />
 
-      <CardContent className="flex min-h-[200px] flex-col items-center justify-center p-12 text-center">
+      <CardHeader className="items-center text-center">
         <div
-          className={cn("mb-4 rounded-full p-4", isDragActive ? "bg-accent/20" : "bg-accent/10")}
+          className={cn("mb-2 rounded-full p-4", isDragActive ? "bg-accent/20" : "bg-accent/10")}
         >
           <UploadIcon className="size-8 text-accent" />
         </div>
-
-        <h3 className="mb-1 text-lg font-semibold text-foreground">
+        <CardTitle className="text-lg">
           {isDragActive ? "Drop image here" : "Upload an image"}
-        </h3>
-        <p className="mb-4 text-sm text-muted-foreground">
+        </CardTitle>
+        <CardDescription>
           {isDragActive ? "Release to upload" : "Drag & drop or click to browse"}
-        </p>
+        </CardDescription>
+      </CardHeader>
 
+      <CardContent className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2">
           {["PNG", "JPG", "WEBP", "GIF"].map((ext) => (
             <span key={ext} className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">

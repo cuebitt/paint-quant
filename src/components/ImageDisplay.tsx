@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageIcon } from "lucide-react";
 
 interface ImageDisplayProps {
@@ -24,11 +24,13 @@ export function ImageDisplay({
 
   return (
     <Card className={className}>
-      <CardContent className="pt-(--card-spacing)">
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
           <ImageIcon className="size-4 text-accent" />
           {title}
-        </h3>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
         <div className="relative overflow-hidden rounded-xl border border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
           <img
             src={imageUrl}

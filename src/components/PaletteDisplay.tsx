@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwatchBookIcon } from "lucide-react";
 
 interface PaletteDisplayProps {
@@ -9,11 +9,13 @@ interface PaletteDisplayProps {
 export function PaletteDisplay({ title, colors }: PaletteDisplayProps) {
   return (
     <Card className="min-w-[200px] flex-1">
-      <CardContent className="pt-(--card-spacing)">
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-sm">
           <SwatchBookIcon className="size-4 text-accent" />
           {title}
-        </h3>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
         <div className="flex flex-wrap gap-1.5">
           {colors.map(([r, g, b], i) => (
             <div
