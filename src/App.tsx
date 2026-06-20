@@ -2,7 +2,7 @@ import { useReducer, useEffect, useRef, useCallback } from "react";
 import { PaintBucketIcon, HeartIcon } from "lucide-react";
 import type { QuantMethod } from "./quantize";
 import { preprocessImageForCanvas, preprocessForDisplay } from "./preprocess";
-import { serializeQuantizedImage } from "./serialize";
+import { serializePaintFile } from "./serialize";
 import type { CanvasType, ImageFitMode } from "./types";
 import type { RGB } from "./palette";
 import { CANVAS_TYPES } from "./types";
@@ -252,16 +252,23 @@ function App() {
     processImage,
   ]);
 
-  const handleExport = useCallback(() => {
+  const handleExportPaintFile = useCallback(() => {
     if (!quantizedDataRef.current) return;
-    const json = serializeQuantizedImage({
+    const paintFile = serializePaintFile({
       quantized: quantizedDataRef.current.quantized,
       adaptivePalette: quantizedDataRef.current.adaptivePalette,
       canvasType: state.selectedCanvas,
     });
-    navigator.clipboard.writeText(JSON.stringify(json, null, 2)).catch(() => {
-      dispatch({ type: "SET_ERROR", error: "Failed to copy to clipboard" });
-    });
+
+    const blob = new Blob([JSON.stringify(paintFile, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `painting_${paintFile.name}.paint`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }, [state.selectedCanvas]);
 
   const hasResults =
@@ -313,7 +320,7 @@ function App() {
               <Toolbar
                 showGrid={state.showGrid}
                 onToggleGrid={() => dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid })}
-                onExport={handleExport}
+                onExportPaintFile={handleExportPaintFile}
                 onReset={() => dispatch({ type: "RESET" })}
                 quantMethod={state.quantMethod}
                 onQuantMethodChange={(method) => dispatch({ type: "SET_QUANT_METHOD", method })}

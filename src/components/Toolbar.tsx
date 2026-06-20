@@ -7,12 +7,12 @@ import { PaddingColorPicker } from "./PaddingColorPicker";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ClipboardCopyIcon, UploadIcon, Grid3x3Icon } from "lucide-react";
+import { UploadIcon, Grid3x3Icon, PaintBucketIcon } from "lucide-react";
 
 interface ToolbarProps {
   showGrid: boolean;
   onToggleGrid: () => void;
-  onExport: () => void;
+  onExportPaintFile: () => void;
   onReset: () => void;
   quantMethod: QuantMethod;
   onQuantMethodChange: (method: QuantMethod) => void;
@@ -26,7 +26,7 @@ interface ToolbarProps {
 export function Toolbar({
   showGrid,
   onToggleGrid,
-  onExport,
+  onExportPaintFile,
   onReset,
   quantMethod,
   onQuantMethodChange,
@@ -57,9 +57,9 @@ export function Toolbar({
             Show Grid
           </Label>
         </div>
-        <Button variant="default" onClick={onExport} disabled={disabled}>
-          <ClipboardCopyIcon data-icon="inline-start" />
-          Copy JSON
+        <Button variant="secondary" onClick={onExportPaintFile} disabled={disabled}>
+          <PaintBucketIcon data-icon="inline-start" />
+          Export .paint
         </Button>
         <Button variant="outline" onClick={onReset} disabled={disabled}>
           <UploadIcon data-icon="inline-start" />

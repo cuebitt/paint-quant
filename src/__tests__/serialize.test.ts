@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { serializeQuantizedImage } from "../serialize";
+import { serializeQuantizedImage, serializePaintFile } from "../serialize";
 import { FIXED_PALETTE, type RGB } from "../palette";
 import { CANVAS_TYPES } from "../types";
 
@@ -82,5 +82,58 @@ describe("serializeQuantizedImage", () => {
       canvasType,
     });
     expect(result.pixels.length).toBe(3);
+  });
+
+  it("returns pixels array", () => {
+    const data = makeImageData([[100, 100, 100]], 1, 1);
+    const result = serializePaintFile({
+      quantized: data,
+      adaptivePalette: [],
+      canvasType,
+    });
+    expect(Array.isArray(result.pixels)).toBe(true);
+    expect(result.pixels.length).toBe(1);
+  });
+
+  it("returns generation 0 for editable painting", () => {
+    const data = makeImageData([[100, 100, 100]], 1, 1);
+    const result = serializePaintFile({
+      quantized: data,
+      adaptivePalette: [],
+      canvasType,
+    });
+    expect(result.generation).toBe(0);
+  });
+
+  it("returns canvas type mapping", () => {
+    const data = makeImageData([[100, 100, 100]], 1, 1);
+    const result = serializePaintFile({
+      quantized: data,
+      adaptivePalette: [],
+      canvasType,
+    });
+    expect(result.ct).toBe("SMALL");
+  });
+
+  it("returns v 99 for editable painting", () => {
+    const data = makeImageData([[100, 100, 100]], 1, 1);
+    const result = serializePaintFile({
+      quantized: data,
+      adaptivePalette: [],
+      canvasType,
+    });
+    expect(result.v).toBe(99);
+  });
+
+  it("has optional author and title fields", () => {
+    const data = makeImageData([[100, 100, 100]], 1, 1);
+    const result = serializePaintFile({
+      quantized: data,
+      adaptivePalette: [],
+      canvasType,
+    });
+    expect(result.author).toBeDefined();
+    expect(result.title).toBeDefined();
+    expect(typeof result.name).toBe("string");
   });
 });
