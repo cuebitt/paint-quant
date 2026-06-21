@@ -31,7 +31,7 @@ export function ImageDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative overflow-hidden rounded-xl border border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
+        <div className="relative overflow-hidden rounded-xl border-2 border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
           <img
             src={imageUrl}
             alt={`${title} - quantized image preview`}
@@ -47,7 +47,13 @@ export function ImageDisplay({
               }}
             >
               {gridCells.map((_, i) => (
-                <div key={i} className="size-auto border border-border bg-transparent" />
+                <div
+                  key={i}
+                  className="size-auto border bg-transparent"
+                  style={{
+                    borderColor: "var(--accent)",
+                  }}
+                />
               ))}
             </div>
           )}

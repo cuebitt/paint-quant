@@ -1,5 +1,5 @@
 import { useReducer, useEffect, useRef, useCallback } from "react";
-import { PaintBucketIcon, HeartIcon, ImageIcon, UploadIcon } from "lucide-react";
+import { PaintBucketIcon, HeartIcon, ImageIcon, UploadIcon, Grid3x3Icon } from "lucide-react";
 import type { QuantMethod, QuantizeOptions } from "./quantize";
 import { preprocessImageForCanvas, preprocessForDisplay } from "./preprocess";
 import type { ResizeOptions } from "./preprocess";
@@ -20,6 +20,8 @@ import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
 import { PaddingColorPicker } from "./components/PaddingColorPicker";
 import { appReducer, initialState } from "./app-state";
+import { Switch } from "./components/ui/switch";
+import { Label } from "./components/ui/label";
 
 const NBT_CT_TO_CANVAS_INDEX = [0, 3, 1, 2] as const;
 
@@ -78,7 +80,10 @@ function App() {
         tempCanvas.height = msg.quantized.height;
         const tempCtx = tempCanvas.getContext("2d");
         if (!tempCtx) {
-          dispatch({ type: "SET_ERROR", error: "Failed to get output canvas context" });
+          dispatch({
+            type: "SET_ERROR",
+            error: "Failed to get output canvas context",
+          });
           return;
         }
         tempCtx.putImageData(quantized, 0, 0);
@@ -144,12 +149,18 @@ function App() {
           tempCanvas.height = processedData.height;
           const tempCtx = tempCanvas.getContext("2d");
           if (!tempCtx) {
-            dispatch({ type: "SET_ERROR", error: "Failed to get output canvas context" });
+            dispatch({
+              type: "SET_ERROR",
+              error: "Failed to get output canvas context",
+            });
             return;
           }
           tempCtx.putImageData(processedData, 0, 0);
 
-          quantizedDataRef.current = { quantized: processedData, adaptivePalette: [] };
+          quantizedDataRef.current = {
+            quantized: processedData,
+            adaptivePalette: [],
+          };
           dispatch({
             type: "SET_RESULT",
             preprocessed: pendingPreprocessedRef.current ?? "",
@@ -211,7 +222,10 @@ function App() {
         tempCtx.putImageData(imageData, 0, 0);
         const dataUrl = tempCanvas.toDataURL();
 
-        quantizedDataRef.current = { quantized: imageData, adaptivePalette: [] };
+        quantizedDataRef.current = {
+          quantized: imageData,
+          adaptivePalette: [],
+        };
         originalImageRef.current = null;
 
         dispatch({ type: "SET_CANVAS", canvas: canvasType });
@@ -260,7 +274,10 @@ function App() {
             state.fitMode,
             state.paddingColor,
             state.quantizationEnabled,
-            { colors: state.adaptiveColorCount, includeFixedPalette: state.includeFixedPalette },
+            {
+              colors: state.adaptiveColorCount,
+              includeFixedPalette: state.includeFixedPalette,
+            },
             { filter: state.resizeFilter, unsharpAmount: state.unsharpAmount },
           );
         };
@@ -299,7 +316,10 @@ function App() {
         state.fitMode,
         state.paddingColor,
         state.quantizationEnabled,
-        { colors: state.adaptiveColorCount, includeFixedPalette: state.includeFixedPalette },
+        {
+          colors: state.adaptiveColorCount,
+          includeFixedPalette: state.includeFixedPalette,
+        },
         { filter: state.resizeFilter, unsharpAmount: state.unsharpAmount },
       );
     }
@@ -350,7 +370,9 @@ function App() {
       downloadName = `${generateShortId()}.paint`;
     }
 
-    const blob = new Blob([paintBuffer as BlobPart], { type: "application/octet-stream" });
+    const blob = new Blob([paintBuffer as BlobPart], {
+      type: "application/octet-stream",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -441,23 +463,44 @@ function App() {
                     onPreview={(color) => dispatch({ type: "SET_PADDING_PREVIEW", color })}
                     onCommit={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
                   />
+                  <Separator orientation="vertical" className="h-5" />
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="grid-toggle"
+                      checked={state.showGrid}
+                      onCheckedChange={() =>
+                        dispatch({
+                          type: "SET_SHOW_GRID",
+                          show: !state.showGrid,
+                        })
+                      }
+                    />
+                    <Label htmlFor="grid-toggle" className="flex items-center gap-1.5 text-sm">
+                      <Grid3x3Icon className="size-3.5 text-muted-foreground" />
+                      Grid
+                    </Label>
+                  </div>
+
                   <div className="ml-auto flex items-center gap-2">
                     <Tooltip>
                       <TooltipTrigger
                         render={
-                          <Button
-                            variant="secondary"
-                            onClick={handleExportPaintFile}
-                            disabled={
-                              state.loading ||
-                              (state.signed && (state.author === "" || state.title === ""))
-                            }
-                          />
+                          <span>
+                            <Button
+                              variant="secondary"
+                              className="w-fit"
+                              onClick={handleExportPaintFile}
+                              disabled={
+                                state.loading ||
+                                (state.signed && (state.author === "" || state.title === ""))
+                              }
+                            >
+                              <PaintBucketIcon data-icon="inline-start" />
+                              Export .paint
+                            </Button>
+                          </span>
                         }
-                      >
-                        <PaintBucketIcon data-icon="inline-start" />
-                        Export .paint
-                      </TooltipTrigger>
+                      ></TooltipTrigger>
                       {state.signed && (state.author === "" || state.title === "") && (
                         <TooltipContent>
                           Title and author are required for signed paintings
@@ -512,7 +555,6 @@ function App() {
                   onSignedChange={(signed) => dispatch({ type: "SET_SIGNED", signed })}
                 />
               </div>
-
               <ImageComparison
                 originalUrl={state.preprocessedUrl}
                 quantizedUrl={state.quantizedUrl}

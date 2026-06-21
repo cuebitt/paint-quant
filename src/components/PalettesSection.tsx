@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { RGB } from "../palette";
 import { FIXED_PALETTE } from "../palette";
 import { PaletteDisplay } from "./PaletteDisplay";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
@@ -23,10 +22,9 @@ export function PalettesSection({ adaptivePalette, adaptiveColorCount }: Palette
 
   return (
     <div className="flex flex-col gap-8">
-      <Separator />
       <div className="flex flex-col gap-8 lg:flex-row">
         <PaletteDisplay title="Fixed Palette (16 colors)" colors={FIXED_PALETTE} />
-        <div className="flex min-w-[200px] flex-1 flex-col gap-3">
+        <div className="flex min-w-50 flex-1 flex-col gap-3">
           <PaletteDisplay
             title={`Adaptive Palette (${adaptiveColorCount} colors)`}
             colors={pageColors}

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
-import { Grid3x3Icon, SparklesIcon } from "lucide-react";
+import { SparklesIcon } from "lucide-react";
 
 interface ToolbarProps {
   showGrid: boolean;
@@ -39,8 +39,6 @@ interface ToolbarProps {
 }
 
 export function Toolbar({
-  showGrid,
-  onToggleGrid,
   quantMethod,
   onQuantMethodChange,
   fitMode,
@@ -85,150 +83,143 @@ export function Toolbar({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <ResizeFilterSelector
-        selectedFilter={resizeFilter}
-        onChange={onResizeFilterChange}
-        disabled={disabled}
-      />
-      {resizeFilter !== "nearest" && (
-        <div className="flex items-center gap-2">
-          <Label htmlFor="unsharp-amount" className="text-sm whitespace-nowrap">
-            Sharpen:
-          </Label>
-          <Slider
-            id="unsharp-amount"
-            min={0}
-            max={300}
-            step={10}
-            value={[unsharpAmount]}
-            onValueChange={(v) => {
-              const val = Array.isArray(v) ? v[0] : v;
-              onUnsharpAmountChange(val);
-            }}
-            disabled={disabled}
-            className="w-28"
-          />
-          <span className="w-8 text-right text-sm text-muted-foreground">{unsharpAmount}</span>
-        </div>
-      )}
-      <Separator orientation="vertical" className="h-5" />
-      <FitModeSelector selectedMode={fitMode} onChange={onFitModeChange} disabled={disabled} />
-      <div className="flex items-center gap-2">
-        <Switch
-          id="grid-toggle"
-          checked={showGrid}
-          onCheckedChange={onToggleGrid}
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        <ResizeFilterSelector
+          selectedFilter={resizeFilter}
+          onChange={onResizeFilterChange}
           disabled={disabled}
         />
-        <Label htmlFor="grid-toggle" className="flex items-center gap-1.5 text-sm">
-          <Grid3x3Icon className="size-3.5 text-muted-foreground" />
-          Grid
-        </Label>
-      </div>
-      <Separator orientation="vertical" className="h-5" />
-      <div className="flex items-center gap-2">
-        <Switch
-          id="quantization-toggle"
-          checked={quantizationEnabled}
-          onCheckedChange={onQuantizationEnabledChange}
-          disabled={disabled}
-        />
-        <Label htmlFor="quantization-toggle" className="flex items-center gap-1.5 text-sm">
-          <SparklesIcon className="size-3.5 text-muted-foreground" />
-          Quantize
-        </Label>
-      </div>
-      <Separator orientation="vertical" className="h-5" />
-      <div className="flex items-center gap-2">
-        <Switch
-          id="signed-toggle"
-          checked={signed}
-          onCheckedChange={onSignedChange}
-          disabled={disabled}
-        />
-        <Label
-          htmlFor="signed-toggle"
-          className="flex items-center gap-1.5 text-sm whitespace-nowrap"
-        >
-          {signed ? "Signed (Non-editable)" : "Unsigned (Editable)"}
-        </Label>
-      </div>
-      {signed && (
-        <>
+        {resizeFilter !== "nearest" && (
           <div className="flex items-center gap-2">
-            <Label htmlFor="painting-title" className="text-sm whitespace-nowrap">
-              Title:
+            <Label htmlFor="unsharp-amount" className="text-sm whitespace-nowrap">
+              Sharpen:
             </Label>
-            <Input
-              id="painting-title"
-              type="text"
-              maxLength={64}
-              value={title}
-              onChange={(e) => onTitleChange(e.target.value)}
-              disabled={disabled}
-              placeholder="Painting title"
-              className="w-40"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="painting-author" className="text-sm whitespace-nowrap">
-              Author:
-            </Label>
-            <Input
-              id="painting-author"
-              type="text"
-              maxLength={64}
-              value={author}
-              onChange={(e) => onAuthorChange(e.target.value)}
-              disabled={disabled}
-              placeholder="Author name"
-              className="w-40"
-            />
-          </div>
-        </>
-      )}
-
-      {quantizationEnabled && (
-        <div className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
-          <QuantMethodSelector
-            selectedMethod={quantMethod}
-            onChange={onQuantMethodChange}
-            disabled={disabled}
-          />
-          <div className="flex items-center gap-2">
-            <Label htmlFor="adaptive-colors" className="text-sm whitespace-nowrap">
-              Colors:
-            </Label>
-            <Input
-              id="adaptive-colors"
-              type="number"
-              min={1}
-              max={256}
-              value={colorCountLocal}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                if (!isNaN(val) && val >= 1 && val <= 256) {
-                  handleColorCountChange(val);
-                }
+            <Slider
+              id="unsharp-amount"
+              min={0}
+              max={300}
+              step={10}
+              value={[unsharpAmount]}
+              onValueChange={(v) => {
+                const val = Array.isArray(v) ? v[0] : v;
+                onUnsharpAmountChange(val);
               }}
               disabled={disabled}
-              className="w-20"
+              className="w-28"
             />
+            <span className="w-8 text-right text-sm text-muted-foreground">{unsharpAmount}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="include-fixed-palette"
-              checked={includeFixedPalette}
-              onCheckedChange={onIncludeFixedPaletteChange}
+        )}
+        <Separator orientation="vertical" className="h-5" />
+        <FitModeSelector selectedMode={fitMode} onChange={onFitModeChange} disabled={disabled} />
+
+        <Separator orientation="vertical" className="h-5" />
+
+        <Separator orientation="vertical" className="h-5" />
+        <div className="flex items-center gap-2">
+          <Switch
+            id="signed-toggle"
+            checked={signed}
+            onCheckedChange={onSignedChange}
+            disabled={disabled}
+          />
+          <Label
+            htmlFor="signed-toggle"
+            className="flex items-center gap-1.5 text-sm whitespace-nowrap"
+          >
+            {signed ? "Signed (Non-editable)" : "Unsigned (Editable)"}
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id="quantization-toggle"
+            checked={quantizationEnabled}
+            onCheckedChange={onQuantizationEnabledChange}
+            disabled={disabled}
+          />
+          <Label htmlFor="quantization-toggle" className="flex items-center gap-1.5 text-sm">
+            <SparklesIcon className="size-3.5 text-muted-foreground" />
+            Quantize
+          </Label>
+        </div>
+
+        {quantizationEnabled && (
+          <div className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <QuantMethodSelector
+              selectedMethod={quantMethod}
+              onChange={onQuantMethodChange}
               disabled={disabled}
             />
-            <Label htmlFor="include-fixed-palette" className="text-sm whitespace-nowrap">
-              Fixed palette
-            </Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="adaptive-colors" className="text-sm whitespace-nowrap">
+                Colors:
+              </Label>
+              <Input
+                id="adaptive-colors"
+                type="number"
+                min={1}
+                max={256}
+                value={colorCountLocal}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 1 && val <= 256) {
+                    handleColorCountChange(val);
+                  }
+                }}
+                disabled={disabled}
+                className="w-20"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="include-fixed-palette"
+                checked={includeFixedPalette}
+                onCheckedChange={onIncludeFixedPaletteChange}
+                disabled={disabled}
+              />
+              <Label htmlFor="include-fixed-palette" className="text-sm whitespace-nowrap">
+                Fixed palette
+              </Label>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+        {signed && (
+          <div className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="painting-title" className="text-sm whitespace-nowrap">
+                Title:
+              </Label>
+              <Input
+                id="painting-title"
+                type="text"
+                maxLength={64}
+                value={title}
+                onChange={(e) => onTitleChange(e.target.value)}
+                disabled={disabled}
+                placeholder="Painting title"
+                className="w-40"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="painting-author" className="text-sm whitespace-nowrap">
+                Author:
+              </Label>
+              <Input
+                id="painting-author"
+                type="text"
+                maxLength={64}
+                value={author}
+                onChange={(e) => onAuthorChange(e.target.value)}
+                disabled={disabled}
+                placeholder="Author name"
+                className="w-40"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
