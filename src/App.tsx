@@ -438,6 +438,7 @@ function App() {
               cellsX={state.selectedCanvas.cellsX}
               cellsY={state.selectedCanvas.cellsY}
               colorCount={state.quantizationEnabled ? state.adaptiveColorCount : 0}
+              quantizationEnabled={state.quantizationEnabled}
             />
 
             {state.quantizationEnabled && (

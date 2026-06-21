@@ -5,7 +5,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 import path from "path";
 
 export default defineConfig({
-  base: "/paint-quant/",
+  base: "/paintcraft/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
