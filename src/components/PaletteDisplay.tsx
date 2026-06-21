@@ -1,4 +1,4 @@
-import { rgbToHex, type RGB } from "../palette";
+import { rgbToHex, type RGB } from "@/palette";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwatchBookIcon } from "lucide-react";
 

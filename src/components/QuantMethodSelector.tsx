@@ -1,4 +1,4 @@
-import type { QuantMethod } from "../quantize";
+import type { QuantMethod } from "@/quantize";
 import { SparklesIcon } from "lucide-react";
 import {
   Select,

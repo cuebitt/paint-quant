@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import type { QuantMethod } from "../quantize";
-import type { ImageFitMode } from "../types";
-import type { ResizeFilter } from "../preprocess";
-import { QuantMethodSelector } from "./QuantMethodSelector";
-import { FitModeSelector } from "./FitModeSelector";
-import { ResizeFilterSelector } from "./ResizeFilterSelector";
+import type { QuantMethod } from "@/quantize";
+import type { ImageFitMode } from "@/types";
+import type { ResizeFilter } from "@/preprocess";
+import { QuantMethodSelector } from "@/components/QuantMethodSelector";
+import { FitModeSelector } from "@/components/FitModeSelector";
+import { ResizeFilterSelector } from "@/components/ResizeFilterSelector";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";

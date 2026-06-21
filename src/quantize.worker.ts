@@ -1,5 +1,5 @@
-import { quantize, type QuantMethod, type QuantizeOptions } from "./quantize";
-import type { RGB } from "./palette";
+import { quantize, type QuantMethod, type QuantizeOptions } from "@/quantize";
+import type { RGB } from "@/palette";
 
 interface QuantizeRequest {
   type: "quantize";

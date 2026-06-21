@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { appReducer, initialState } from "../app-state";
-import { CANVAS_TYPES } from "../types";
+import { appReducer, initialState } from "@/app-state";
+import { CANVAS_TYPES } from "@/types";
 
 describe("appReducer", () => {
   it("handles SET_ORIGINAL", () => {

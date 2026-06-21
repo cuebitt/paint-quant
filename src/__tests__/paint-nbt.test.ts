@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "../paint-nbt";
-import type { PaintingData } from "../paint-nbt";
-import { CANVAS_TYPES } from "../types";
+import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/paint-nbt";
+import type { PaintingData } from "@/paint-nbt";
+import { CANVAS_TYPES } from "@/types";
 
 function makePaintData(
   canvasType: number,

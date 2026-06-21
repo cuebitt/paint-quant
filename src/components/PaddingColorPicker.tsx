@@ -1,6 +1,6 @@
 import { PaintbrushIcon } from "lucide-react";
-import { rgbToHex, type RGB } from "../palette";
-import { PopoverPicker } from "./PopoverPicker";
+import { rgbToHex, type RGB } from "@/palette";
+import { PopoverPicker } from "@/components/PopoverPicker";
 
 interface PaddingColorPickerProps {
   selectedColor: RGB;

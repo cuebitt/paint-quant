@@ -1,6 +1,6 @@
 import { Buffer } from "buffer";
 import * as nbt from "prismarine-nbt";
-import type { CanvasType } from "./types";
+import type { CanvasType } from "@/types";
 
 const PIXEL_COUNTS: Record<number, number> = {
   0: 256, // 16×16

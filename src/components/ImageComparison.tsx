@@ -1,4 +1,4 @@
-import { ImageDisplay } from "./ImageDisplay";
+import { ImageDisplay } from "@/components/ImageDisplay";
 
 interface ImageComparisonProps {
   originalUrl: string | null;

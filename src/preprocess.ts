@@ -1,6 +1,6 @@
 import pica from "pica";
-import type { CanvasType, ImageFitMode } from "./types";
-import type { RGB } from "./palette";
+import type { CanvasType, ImageFitMode } from "@/types";
+import type { RGB } from "@/palette";
 
 export const DEFAULT_PADDING_COLOR: RGB = [255, 255, 255];
 

@@ -1,4 +1,4 @@
-import type { ResizeFilter } from "../preprocess";
+import type { ResizeFilter } from "@/preprocess";
 import { ScalingIcon } from "lucide-react";
 import {
   Select,

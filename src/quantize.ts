@@ -6,7 +6,7 @@ import {
   type ImageQuantization,
   type PaletteQuantization,
 } from "image-q";
-import { FIXED_PALETTE, type RGB } from "./palette";
+import { FIXED_PALETTE, type RGB } from "@/palette";
 
 export type QuantMethod = "median-cut" | "neuquant" | "wuquant";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { quantize } from "../quantize";
-import { FIXED_PALETTE, type RGB } from "../palette";
+import { quantize } from "@/quantize";
+import { FIXED_PALETTE, type RGB } from "@/palette";
 
 function makeImageData(
   pixels: [number, number, number][],

@@ -1,4 +1,4 @@
-import { type CanvasType, CANVAS_TYPES } from "../types";
+import { type CanvasType, CANVAS_TYPES } from "@/types";
 import { Grid3x3Icon } from "lucide-react";
 import {
   Select,

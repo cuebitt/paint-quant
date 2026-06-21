@@ -1,4 +1,4 @@
-import { type ImageFitMode, FIT_MODES } from "../types";
+import { type ImageFitMode, FIT_MODES } from "@/types";
 import { Maximize2Icon } from "lucide-react";
 import {
   Select,

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import type { RGB } from "../palette";
-import { FIXED_PALETTE } from "../palette";
-import { PaletteDisplay } from "./PaletteDisplay";
+import type { RGB } from "@/palette";
+import { FIXED_PALETTE } from "@/palette";
+import { PaletteDisplay } from "@/components/PaletteDisplay";
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { FIXED_PALETTE } from "../palette";
+import { FIXED_PALETTE } from "@/palette";
 
 describe("FIXED_PALETTE", () => {
   it("contains 16 colors", () => {
