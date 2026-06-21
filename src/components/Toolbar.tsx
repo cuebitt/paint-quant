@@ -1,34 +1,24 @@
 import { useState, useEffect, useRef } from "react";
 import type { QuantMethod } from "../quantize";
 import type { ImageFitMode } from "../types";
-import type { RGB } from "../palette";
 import type { ResizeFilter } from "../preprocess";
 import { QuantMethodSelector } from "./QuantMethodSelector";
 import { FitModeSelector } from "./FitModeSelector";
-import { PaddingColorPicker } from "./PaddingColorPicker";
 import { ResizeFilterSelector } from "./ResizeFilterSelector";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { UploadIcon, Grid3x3Icon, PaintBucketIcon, SparklesIcon, ImageIcon } from "lucide-react";
+import { Grid3x3Icon, SparklesIcon } from "lucide-react";
 
 interface ToolbarProps {
   showGrid: boolean;
   onToggleGrid: () => void;
-  onExportPaintFile: () => void;
-  onExportPng: () => void;
-  onReset: () => void;
   quantMethod: QuantMethod;
   onQuantMethodChange: (method: QuantMethod) => void;
   fitMode: ImageFitMode;
   onFitModeChange: (mode: ImageFitMode) => void;
-  paddingColor: RGB;
-  onPaddingColorPreview: (color: RGB) => void;
-  onPaddingColorChange: (color: RGB) => void;
   disabled?: boolean;
   quantizationEnabled: boolean;
   onQuantizationEnabledChange: (enabled: boolean) => void;
@@ -51,16 +41,10 @@ interface ToolbarProps {
 export function Toolbar({
   showGrid,
   onToggleGrid,
-  onExportPaintFile,
-  onExportPng,
-  onReset,
   quantMethod,
   onQuantMethodChange,
   fitMode,
   onFitModeChange,
-  paddingColor,
-  onPaddingColorPreview,
-  onPaddingColorChange,
   disabled = false,
   quantizationEnabled,
   onQuantizationEnabledChange,
@@ -101,65 +85,112 @@ export function Toolbar({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <ResizeFilterSelector
-          selectedFilter={resizeFilter}
-          onChange={onResizeFilterChange}
+    <div className="flex flex-wrap items-center gap-3">
+      <ResizeFilterSelector
+        selectedFilter={resizeFilter}
+        onChange={onResizeFilterChange}
+        disabled={disabled}
+      />
+      {resizeFilter !== "nearest" && (
+        <div className="flex items-center gap-2">
+          <Label htmlFor="unsharp-amount" className="text-sm whitespace-nowrap">
+            Sharpen:
+          </Label>
+          <Slider
+            id="unsharp-amount"
+            min={0}
+            max={300}
+            step={10}
+            value={[unsharpAmount]}
+            onValueChange={(v) => {
+              const val = Array.isArray(v) ? v[0] : v;
+              onUnsharpAmountChange(val);
+            }}
+            disabled={disabled}
+            className="w-28"
+          />
+          <span className="w-8 text-right text-sm text-muted-foreground">{unsharpAmount}</span>
+        </div>
+      )}
+      <Separator orientation="vertical" className="h-5" />
+      <FitModeSelector selectedMode={fitMode} onChange={onFitModeChange} disabled={disabled} />
+      <div className="flex items-center gap-2">
+        <Switch
+          id="grid-toggle"
+          checked={showGrid}
+          onCheckedChange={onToggleGrid}
           disabled={disabled}
         />
-        {resizeFilter !== "nearest" && (
-          <div className="flex items-center gap-2">
-            <Label htmlFor="unsharp-amount" className="text-sm whitespace-nowrap">
-              Sharpen:
-            </Label>
-            <Slider
-              id="unsharp-amount"
-              min={0}
-              max={300}
-              step={10}
-              value={[unsharpAmount]}
-              onValueChange={(v) => {
-                const val = Array.isArray(v) ? v[0] : v;
-                onUnsharpAmountChange(val);
-              }}
-              disabled={disabled}
-              className="w-28"
-            />
-            <span className="w-8 text-right text-sm text-muted-foreground">{unsharpAmount}</span>
-          </div>
-        )}
-        <Separator orientation="vertical" className="h-5" />
-        <FitModeSelector selectedMode={fitMode} onChange={onFitModeChange} disabled={disabled} />
-        <div className="flex items-center gap-2">
-          <Switch
-            id="grid-toggle"
-            checked={showGrid}
-            onCheckedChange={onToggleGrid}
-            disabled={disabled}
-          />
-          <Label htmlFor="grid-toggle" className="flex items-center gap-1.5 text-sm">
-            <Grid3x3Icon className="size-3.5 text-muted-foreground" />
-            Grid
-          </Label>
-        </div>
-        <Separator orientation="vertical" className="h-5" />
-        <div className="flex items-center gap-2">
-          <Switch
-            id="quantization-toggle"
-            checked={quantizationEnabled}
-            onCheckedChange={onQuantizationEnabledChange}
-            disabled={disabled}
-          />
-          <Label htmlFor="quantization-toggle" className="flex items-center gap-1.5 text-sm">
-            <SparklesIcon className="size-3.5 text-muted-foreground" />
-            Quantize
-          </Label>
-        </div>
+        <Label htmlFor="grid-toggle" className="flex items-center gap-1.5 text-sm">
+          <Grid3x3Icon className="size-3.5 text-muted-foreground" />
+          Grid
+        </Label>
       </div>
+      <Separator orientation="vertical" className="h-5" />
+      <div className="flex items-center gap-2">
+        <Switch
+          id="quantization-toggle"
+          checked={quantizationEnabled}
+          onCheckedChange={onQuantizationEnabledChange}
+          disabled={disabled}
+        />
+        <Label htmlFor="quantization-toggle" className="flex items-center gap-1.5 text-sm">
+          <SparklesIcon className="size-3.5 text-muted-foreground" />
+          Quantize
+        </Label>
+      </div>
+      <Separator orientation="vertical" className="h-5" />
+      <div className="flex items-center gap-2">
+        <Switch
+          id="signed-toggle"
+          checked={signed}
+          onCheckedChange={onSignedChange}
+          disabled={disabled}
+        />
+        <Label
+          htmlFor="signed-toggle"
+          className="flex items-center gap-1.5 text-sm whitespace-nowrap"
+        >
+          {signed ? "Signed (Non-editable)" : "Unsigned (Editable)"}
+        </Label>
+      </div>
+      {signed && (
+        <>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="painting-title" className="text-sm whitespace-nowrap">
+              Title:
+            </Label>
+            <Input
+              id="painting-title"
+              type="text"
+              maxLength={64}
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              disabled={disabled}
+              placeholder="Painting title"
+              className="w-40"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="painting-author" className="text-sm whitespace-nowrap">
+              Author:
+            </Label>
+            <Input
+              id="painting-author"
+              type="text"
+              maxLength={64}
+              value={author}
+              onChange={(e) => onAuthorChange(e.target.value)}
+              disabled={disabled}
+              placeholder="Author name"
+              className="w-40"
+            />
+          </div>
+        </>
+      )}
 
       {quantizationEnabled && (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+        <div className="flex w-full flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
           <QuantMethodSelector
             selectedMethod={quantMethod}
             onChange={onQuantMethodChange}
@@ -198,93 +229,6 @@ export function Toolbar({
           </div>
         </div>
       )}
-
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Switch
-            id="signed-toggle"
-            checked={signed}
-            onCheckedChange={onSignedChange}
-            disabled={disabled}
-          />
-          <Label
-            htmlFor="signed-toggle"
-            className="flex items-center gap-1.5 text-sm whitespace-nowrap"
-          >
-            {signed ? "Signed (Non-editable)" : "Unsigned (Editable)"}
-          </Label>
-        </div>
-        {signed && (
-          <>
-            <Separator orientation="vertical" className="h-5" />
-            <div className="flex items-center gap-2">
-              <Label htmlFor="painting-title" className="text-sm whitespace-nowrap">
-                Title:
-              </Label>
-              <Input
-                id="painting-title"
-                type="text"
-                maxLength={64}
-                value={title}
-                onChange={(e) => onTitleChange(e.target.value)}
-                disabled={disabled}
-                placeholder="Painting title"
-                className="w-40"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="painting-author" className="text-sm whitespace-nowrap">
-                Author:
-              </Label>
-              <Input
-                id="painting-author"
-                type="text"
-                maxLength={64}
-                value={author}
-                onChange={(e) => onAuthorChange(e.target.value)}
-                disabled={disabled}
-                placeholder="Author name"
-                className="w-40"
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <PaddingColorPicker
-          selectedColor={paddingColor}
-          onPreview={onPaddingColorPreview}
-          onCommit={onPaddingColorChange}
-        />
-        <div className="ml-auto flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="secondary"
-                  onClick={onExportPaintFile}
-                  disabled={disabled || (signed && (author === "" || title === ""))}
-                />
-              }
-            >
-              <PaintBucketIcon data-icon="inline-start" />
-              Export .paint
-            </TooltipTrigger>
-            {signed && (author === "" || title === "") && (
-              <TooltipContent>Title and author are required for signed paintings</TooltipContent>
-            )}
-          </Tooltip>
-          <Button variant="secondary" onClick={onExportPng} disabled={disabled}>
-            <ImageIcon data-icon="inline-start" />
-            Export PNG
-          </Button>
-          <Button variant="outline" onClick={onReset} disabled={disabled}>
-            <UploadIcon data-icon="inline-start" />
-            Upload new
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

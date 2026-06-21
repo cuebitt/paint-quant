@@ -1,5 +1,5 @@
 import { useReducer, useEffect, useRef, useCallback } from "react";
-import { PaintBucketIcon, HeartIcon } from "lucide-react";
+import { PaintBucketIcon, HeartIcon, ImageIcon, UploadIcon } from "lucide-react";
 import type { QuantMethod, QuantizeOptions } from "./quantize";
 import { preprocessImageForCanvas, preprocessForDisplay } from "./preprocess";
 import type { ResizeOptions } from "./preprocess";
@@ -15,7 +15,10 @@ import { ImageComparison } from "./components/ImageComparison";
 import { PalettesSection } from "./components/PalettesSection";
 import { ModeToggle } from "./components/ModeToggle";
 import { AboutDialog } from "./components/AboutDialog";
-import { TooltipProvider } from "./components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "./components/ui/tooltip";
+import { Button } from "./components/ui/button";
+import { Separator } from "./components/ui/separator";
+import { PaddingColorPicker } from "./components/PaddingColorPicker";
 import { appReducer, initialState } from "./app-state";
 
 const NBT_CT_TO_CANVAS_INDEX = [0, 3, 1, 2] as const;
@@ -425,27 +428,63 @@ function App() {
             </div>
           ) : (
             <div className="flex flex-col gap-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <CanvasSelector
-                  selectedCanvas={state.selectedCanvas}
-                  onChange={(canvas) => dispatch({ type: "SET_CANVAS", canvas })}
-                  disabled={state.loading}
-                />
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <CanvasSelector
+                    selectedCanvas={state.selectedCanvas}
+                    onChange={(canvas) => dispatch({ type: "SET_CANVAS", canvas })}
+                    disabled={state.loading}
+                  />
+                  <Separator orientation="vertical" className="h-5" />
+                  <PaddingColorPicker
+                    selectedColor={state.paddingColorPreview}
+                    onPreview={(color) => dispatch({ type: "SET_PADDING_PREVIEW", color })}
+                    onCommit={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
+                  />
+                  <div className="ml-auto flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            variant="secondary"
+                            onClick={handleExportPaintFile}
+                            disabled={
+                              state.loading ||
+                              (state.signed && (state.author === "" || state.title === ""))
+                            }
+                          />
+                        }
+                      >
+                        <PaintBucketIcon data-icon="inline-start" />
+                        Export .paint
+                      </TooltipTrigger>
+                      {state.signed && (state.author === "" || state.title === "") && (
+                        <TooltipContent>
+                          Title and author are required for signed paintings
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                    <Button variant="secondary" onClick={handleExportPng} disabled={state.loading}>
+                      <ImageIcon data-icon="inline-start" />
+                      Export PNG
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => dispatch({ type: "RESET" })}
+                      disabled={state.loading}
+                    >
+                      <UploadIcon data-icon="inline-start" />
+                      Upload new
+                    </Button>
+                  </div>
+                </div>
                 <Toolbar
                   showGrid={state.showGrid}
                   onToggleGrid={() => dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid })}
-                  onExportPaintFile={handleExportPaintFile}
-                  onExportPng={handleExportPng}
-                  onReset={() => dispatch({ type: "RESET" })}
                   quantMethod={state.quantMethod}
                   onQuantMethodChange={(method) => dispatch({ type: "SET_QUANT_METHOD", method })}
                   fitMode={state.fitMode}
                   onFitModeChange={(mode) => dispatch({ type: "SET_FIT_MODE", mode })}
-                  paddingColor={state.paddingColorPreview}
-                  onPaddingColorPreview={(color) =>
-                    dispatch({ type: "SET_PADDING_PREVIEW", color })
-                  }
-                  onPaddingColorChange={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
                   disabled={state.loading}
                   quantizationEnabled={state.quantizationEnabled}
                   onQuantizationEnabledChange={(enabled) =>
