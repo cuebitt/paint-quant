@@ -1,45 +1,41 @@
-import { FIXED_PALETTE, type RGB } from "../palette";
 import { PaintbrushIcon } from "lucide-react";
+import type { RGB } from "../palette";
+import { PopoverPicker } from "./PopoverPicker";
 
 interface PaddingColorPickerProps {
   selectedColor: RGB;
-  onChange: (color: RGB) => void;
-  disabled?: boolean;
+  onPreview: (color: RGB) => void;
+  onCommit: (color: RGB) => void;
 }
 
 export function PaddingColorPicker({
   selectedColor,
-  onChange,
-  disabled = false,
+  onPreview,
+  onCommit,
 }: PaddingColorPickerProps) {
+  const hexColor = `#${selectedColor.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+
+  const toRgb = (hex: string): RGB => {
+    const r = parseInt(hex.substring(1, 3), 16);
+    const g = parseInt(hex.substring(3, 5), 16);
+    const b = parseInt(hex.substring(5, 7), 16);
+    return [r, g, b];
+  };
+
   return (
     <div className="flex items-center gap-3">
-      <span className="flex items-center gap-1.5 text-sm font-medium whitespace-nowrap text-foreground">
-        <PaintbrushIcon className="size-4 text-accent" />
-        Padding:
-      </span>
-      <div className="flex gap-1" role="radiogroup" aria-label="Padding color">
-        {FIXED_PALETTE.map(([r, g, b], i) => {
-          const isSelected =
-            selectedColor[0] === r && selectedColor[1] === g && selectedColor[2] === b;
-          return (
-            <button
-              key={i}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              aria-label={`Color rgb(${r}, ${g}, ${b})`}
-              className={`size-6 rounded-md border transition-all ${
-                isSelected
-                  ? "scale-110 ring-2 ring-foreground ring-offset-1"
-                  : "border-border hover:scale-110"
-              } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-              style={{ backgroundColor: `rgb(${r},${g},${b})` }}
-              onClick={() => !disabled && onChange([r, g, b])}
-              disabled={disabled}
-            />
-          );
-        })}
+      <PaintbrushIcon className="size-4 text-accent" />
+      <span className="text-sm font-medium whitespace-nowrap text-foreground">Padding:</span>
+      <div className="flex items-center gap-2">
+        <div
+          className="size-6 rounded-md border border-border"
+          style={{ backgroundColor: `rgb(${selectedColor.join(",")})` }}
+        />
+        <PopoverPicker
+          color={hexColor}
+          onChange={(hex) => onPreview(toRgb(hex))}
+          onChangeEnd={(hex) => onCommit(toRgb(hex))}
+        />
       </div>
     </div>
   );

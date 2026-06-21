@@ -16,14 +16,17 @@
     "test:watch": "vp test watch"
   },
   "dependencies": {
+    "@base-ui-components/react": "1.0.0-rc.0",
     "@base-ui/react": "^1.5.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@tailwindcss/vite": "^4.3.1",
+    "@uidotdev/usehooks": "^2.4.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "image-q": "^4.0.0",
     "lucide-react": "^1.20.0",
     "react": "^19.2.6",
+    "react-colorful": "^5.7.0",
     "react-dom": "^19.2.6",
     "shadcn": "^4.11.0",
     "tailwind-merge": "^3.6.0",

@@ -8,8 +8,6 @@ import {
 } from "image-q";
 import { FIXED_PALETTE, findNearestPaletteColor, type RGB } from "./palette";
 
-export const FIXED_PALETTE_COLORS: readonly RGB[] = FIXED_PALETTE;
-
 export type QuantMethod = "median-cut" | "neuquant" | "wuquant";
 
 export interface QuantizeResult {
@@ -39,14 +37,21 @@ function buildImageQPalette(colors: RGB[]): utils.Palette {
 function medianCut(pixels: RGB[], depth: number): RGB[] {
   if (pixels.length === 0) return [[0, 0, 0]];
   if (depth === 0) {
-    const sum = pixels.reduce(([ar, ag, ab], [r, g, b]) => [ar + r, ag + g, ab + b], [0, 0, 0]);
+    const sum = pixels.reduce(
+      (acc, pixel) => {
+        const [r, g, b] = pixel;
+        return [acc[0] + r, acc[1] + g, acc[2] + b] as [number, number, number];
+      },
+      [0, 0, 0] as [number, number, number],
+    );
     const n = pixels.length;
     return [[Math.round(sum[0] / n), Math.round(sum[1] / n), Math.round(sum[2] / n)]];
   }
 
-  const min = [Infinity, Infinity, Infinity] as RGB;
-  const max = [-Infinity, -Infinity, -Infinity] as RGB;
-  for (const [r, g, b] of pixels) {
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (const pixel of pixels) {
+    const [r, g, b] = pixel;
     if (r < min[0]) min[0] = r;
     if (g < min[1]) min[1] = g;
     if (b < min[2]) min[2] = b;
@@ -59,7 +64,7 @@ function medianCut(pixels: RGB[], depth: number): RGB[] {
   const channel =
     ranges[0] >= ranges[1] && ranges[0] >= ranges[2] ? 0 : ranges[1] >= ranges[2] ? 1 : 2;
 
-  pixels.sort((a, b) => a[channel] - b[channel]);
+  pixels.sort((a, b) => a[channel as number] - b[channel as number]);
 
   const mid = Math.floor(pixels.length / 2);
   return [

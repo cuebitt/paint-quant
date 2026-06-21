@@ -19,6 +19,7 @@ interface ToolbarProps {
   fitMode: ImageFitMode;
   onFitModeChange: (mode: ImageFitMode) => void;
   paddingColor: RGB;
+  onPaddingColorPreview: (color: RGB) => void;
   onPaddingColorChange: (color: RGB) => void;
   disabled?: boolean;
 }
@@ -33,6 +34,7 @@ export function Toolbar({
   fitMode,
   onFitModeChange,
   paddingColor,
+  onPaddingColorPreview,
   onPaddingColorChange,
   disabled = false,
 }: ToolbarProps) {
@@ -68,8 +70,8 @@ export function Toolbar({
       </div>
       <PaddingColorPicker
         selectedColor={paddingColor}
-        onChange={onPaddingColorChange}
-        disabled={disabled}
+        onPreview={onPaddingColorPreview}
+        onCommit={onPaddingColorChange}
       />
     </div>
   );

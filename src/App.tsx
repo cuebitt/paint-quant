@@ -26,6 +26,7 @@ interface AppState {
   quantMethod: QuantMethod;
   fitMode: ImageFitMode;
   paddingColor: RGB;
+  paddingColorPreview: RGB;
 }
 
 type AppAction =
@@ -43,6 +44,7 @@ type AppAction =
   | { type: "SET_QUANT_METHOD"; method: QuantMethod }
   | { type: "SET_FIT_MODE"; mode: ImageFitMode }
   | { type: "SET_PADDING_COLOR"; color: RGB }
+  | { type: "SET_PADDING_PREVIEW"; color: RGB }
   | { type: "RESET" };
 
 const initialState: AppState = {
@@ -58,6 +60,7 @@ const initialState: AppState = {
   quantMethod: "median-cut",
   fitMode: "contain",
   paddingColor: [255, 255, 255],
+  paddingColorPreview: [255, 255, 255],
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -86,7 +89,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case "SET_FIT_MODE":
       return { ...state, fitMode: action.mode };
     case "SET_PADDING_COLOR":
-      return { ...state, paddingColor: action.color };
+      return { ...state, paddingColor: action.color, paddingColorPreview: action.color };
+    case "SET_PADDING_PREVIEW":
+      return { ...state, paddingColorPreview: action.color };
     case "RESET":
       return initialState;
   }
@@ -326,7 +331,8 @@ function App() {
                 onQuantMethodChange={(method) => dispatch({ type: "SET_QUANT_METHOD", method })}
                 fitMode={state.fitMode}
                 onFitModeChange={(mode) => dispatch({ type: "SET_FIT_MODE", mode })}
-                paddingColor={state.paddingColor}
+                paddingColor={state.paddingColorPreview}
+                onPaddingColorPreview={(color) => dispatch({ type: "SET_PADDING_PREVIEW", color })}
                 onPaddingColorChange={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
                 disabled={state.loading}
               />
@@ -340,7 +346,7 @@ function App() {
               cellsY={state.selectedCanvas.cellsY}
             />
 
-            <PalettesSection adaptivePalette={state.adaptivePalette} />
+            <PalettesSection />
           </div>
         )}
       </main>

@@ -101,19 +101,6 @@ export function serializePaintFile({
     }
   }
 
-  const canvasTypeMap: Record<string, string> = {
-    "1×1 Canvas": "SMALL",
-    "2×1 Long Canvas": "LONG",
-    "1×2 Tall Canvas": "TALL",
-    "2×2 Square": "LARGE",
-    "3×3 Square": "EXTRA_LARGE",
-    "4×4 Large Square": "EXTRA_EXTRA_LARGE",
-    "3×2 Medium": "EXTRA_LONG",
-    "4×3 Wide": "EXTRA_EXTRA_LONG",
-    "2×3 Medium": "EXTRA_TALL",
-    "3×4 Tall": "EXTRA_EXTRA_TALL",
-  };
-
   const generateUUID = (): string => {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
       const r = (Math.random() * 16) | 0;
@@ -126,7 +113,7 @@ export function serializePaintFile({
 
   return {
     generation: 0,
-    ct: canvasTypeMap[canvasType.name] || "SMALL",
+    ct: CANVAS_TYPE_MAP[canvasType.name] || "SMALL",
     pixels,
     v: 99,
     author: "",
