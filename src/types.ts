@@ -26,16 +26,3 @@ export const CANVAS_TYPES: CanvasType[] = [
   { name: "2×3 Medium", width: 32, height: 48, cellsX: 2, cellsY: 3 },
   { name: "3×4 Tall", width: 48, height: 64, cellsX: 3, cellsY: 4 },
 ];
-
-export const CANVAS_TYPE_MAP: Record<string, string> = {
-  "1×1 Canvas": "SMALL",
-  "2×1 Long Canvas": "LONG",
-  "1×2 Tall Canvas": "TALL",
-  "2×2 Square": "LARGE",
-  "3×3 Square": "EXTRA_LARGE",
-  "4×4 Large Square": "EXTRA_EXTRA_LARGE",
-  "3×2 Medium": "EXTRA_LONG",
-  "4×3 Wide": "EXTRA_EXTRA_LONG",
-  "2×3 Medium": "EXTRA_TALL",
-  "3×4 Tall": "EXTRA_EXTRA_TALL",
-};

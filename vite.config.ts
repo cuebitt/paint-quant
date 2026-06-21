@@ -1,9 +1,9 @@
 import { defineConfig } from "vite-plus";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import path from "path";
 
-// https://vite.dev/config/
 export default defineConfig({
   base: "/paint-quant/",
   resolve: {
@@ -33,7 +33,7 @@ export default defineConfig({
     },
     ignorePatterns: ["dist"],
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [nodePolyfills({ globals: { Buffer: true } }), react(), tailwindcss()],
   test: {
     environment: "happy-dom",
     include: ["src/**/*.{test,spec}.ts"],

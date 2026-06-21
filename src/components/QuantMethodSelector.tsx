@@ -35,6 +35,7 @@ export function QuantMethodSelector({
       <Select
         value={selectedMethod}
         onValueChange={(value) => onChange(value as QuantMethod)}
+        items={QUANT_METHODS}
         disabled={disabled}
       >
         <SelectTrigger className="min-w-45">

@@ -74,7 +74,7 @@ export function UploadDropzone({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.paint"
         onChange={handleFileChange}
         className="absolute inset-0 cursor-pointer opacity-0"
         disabled={disabled || loading}
@@ -99,7 +99,7 @@ export function UploadDropzone({
 
       <CardContent className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2">
-          {["PNG", "JPG", "WEBP", "GIF"].map((ext) => (
+          {["PNG", "JPG", "WEBP", "GIF", "PAINT"].map((ext) => (
             <span key={ext} className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
               {ext}
             </span>

@@ -29,6 +29,7 @@ export function FitModeSelector({
       <Select
         value={selectedMode}
         onValueChange={(value) => onChange(value as ImageFitMode)}
+        items={FIT_MODES}
         disabled={disabled}
       >
         <SelectTrigger className="min-w-45">

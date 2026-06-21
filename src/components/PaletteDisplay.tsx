@@ -1,11 +1,13 @@
+import { rgbToHex, type RGB } from "../palette";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwatchBookIcon } from "lucide-react";
 
 interface PaletteDisplayProps {
   title: string;
+  colors: readonly RGB[];
 }
 
-export function PaletteDisplay({ title }: PaletteDisplayProps) {
+export function PaletteDisplay({ title, colors }: PaletteDisplayProps) {
   return (
     <Card className="min-w-[200px] flex-1">
       <CardHeader>
@@ -15,8 +17,19 @@ export function PaletteDisplay({ title }: PaletteDisplayProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex h-20 items-center justify-center text-muted-foreground">
-          Color palette preview removed - using PopoverPicker for color selection
+        <div className="grid grid-cols-6 gap-2">
+          {colors.map((color, i) => (
+            <div key={`${rgbToHex(color)}-${i}`} className="flex flex-col items-center gap-1">
+              <div
+                className="size-8 rounded-md border border-border shadow-sm"
+                style={{ backgroundColor: rgbToHex(color) }}
+                title={rgbToHex(color)}
+              />
+              <span className="text-[10px] leading-none text-muted-foreground">
+                {rgbToHex(color)}
+              </span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

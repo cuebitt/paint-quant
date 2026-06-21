@@ -1,4 +1,4 @@
-import { quantize, type QuantMethod } from "./quantize";
+import { quantize, type QuantMethod, type QuantizeOptions } from "./quantize";
 import type { RGB } from "./palette";
 
 interface QuantizeRequest {
@@ -9,6 +9,7 @@ interface QuantizeRequest {
     height: number;
   };
   method: QuantMethod;
+  options: QuantizeOptions;
 }
 
 interface QuantizeResponse {
@@ -19,7 +20,6 @@ interface QuantizeResponse {
     height: number;
   };
   adaptivePalette: readonly RGB[];
-  combinedPalette: RGB[];
 }
 
 interface ErrorResponse {
@@ -32,14 +32,14 @@ type WorkerResponse = QuantizeResponse | ErrorResponse;
 
 self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   try {
-    const { imageData, method } = e.data;
+    const { imageData, method, options } = e.data;
     const input = new ImageData(
       new Uint8ClampedArray(imageData.data),
       imageData.width,
       imageData.height,
     );
 
-    const result = quantize(input, method);
+    const result = quantize(input, method, options);
 
     const response: WorkerResponse = {
       type: "result",
@@ -49,7 +49,6 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
         height: result.quantized.height,
       },
       adaptivePalette: result.adaptivePalette,
-      combinedPalette: result.combinedPalette,
     };
 
     self.postMessage(response);

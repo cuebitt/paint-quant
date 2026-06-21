@@ -34,7 +34,7 @@ export function ImageDisplay({
         <div className="relative overflow-hidden rounded-xl border border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
           <img
             src={imageUrl}
-            alt={`${title} — quantized image preview`}
+            alt={`${title} - quantized image preview`}
             className="image-rendering-pixelated h-auto w-full"
           />
           {showGrid && (
@@ -47,7 +47,7 @@ export function ImageDisplay({
               }}
             >
               {gridCells.map((_, i) => (
-                <div key={i} className="size-auto border border-black bg-transparent" />
+                <div key={i} className="size-auto border border-border bg-transparent" />
               ))}
             </div>
           )}

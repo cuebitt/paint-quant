@@ -1,47 +1,101 @@
+import pica from "pica";
 import type { CanvasType, ImageFitMode } from "./types";
 import type { RGB } from "./palette";
 
-const DEFAULT_PADDING_COLOR: RGB = [255, 255, 255];
+export const DEFAULT_PADDING_COLOR: RGB = [255, 255, 255];
+
+export type ResizeFilter = "nearest" | "box" | "hamming" | "lanczos2" | "lanczos3" | "mks2013";
+
+export interface ResizeOptions {
+  filter: ResizeFilter;
+  unsharpAmount: number;
+}
+
+const picaInstance = pica();
 
 function rgbString(color: RGB): string {
   return `rgb(${color[0]},${color[1]},${color[2]})`;
 }
 
+function computeScale(
+  imageWidth: number,
+  imageHeight: number,
+  targetWidth: number,
+  targetHeight: number,
+  fitMode: ImageFitMode,
+): number {
+  if (fitMode === "width") return targetWidth / imageWidth;
+  if (fitMode === "height") return targetHeight / imageHeight;
+  return Math.min(targetWidth / imageWidth, targetHeight / imageHeight);
+}
+
 /**
  * Preprocess uploaded image to fit specified canvas dimensions
  */
-export const preprocessImageForCanvas = (
+export const preprocessImageForCanvas = async (
   image: HTMLImageElement,
   canvasType: CanvasType,
   fitMode: ImageFitMode = "contain",
   paddingColor: RGB = DEFAULT_PADDING_COLOR,
-): ImageData => {
-  const tempCanvas = document.createElement("canvas");
-  const tempCtx = tempCanvas.getContext("2d");
-  if (!tempCtx) throw new Error("Failed to get 2D canvas context");
-  tempCanvas.width = canvasType.width;
-  tempCanvas.height = canvasType.height;
-
-  let scale: number;
-  if (fitMode === "width") {
-    scale = canvasType.width / image.width;
-  } else if (fitMode === "height") {
-    scale = canvasType.height / image.height;
-  } else {
-    scale = Math.min(canvasType.width / image.width, canvasType.height / image.height);
-  }
+  resizeOptions: ResizeOptions = { filter: "nearest", unsharpAmount: 0 },
+): Promise<ImageData> => {
+  const scale = computeScale(
+    image.width,
+    image.height,
+    canvasType.width,
+    canvasType.height,
+    fitMode,
+  );
 
   const scaledWidth = Math.floor(image.width * scale);
   const scaledHeight = Math.floor(image.height * scale);
   const offsetX = (canvasType.width - scaledWidth) / 2;
   const offsetY = (canvasType.height - scaledHeight) / 2;
 
-  tempCtx.imageSmoothingEnabled = false;
-  tempCtx.fillStyle = rgbString(paddingColor);
-  tempCtx.fillRect(0, 0, canvasType.width, canvasType.height);
-  tempCtx.drawImage(image, offsetX, offsetY, scaledWidth, scaledHeight);
+  if (resizeOptions.filter === "nearest") {
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+    if (!tempCtx) throw new Error("Failed to get 2D canvas context");
+    tempCanvas.width = canvasType.width;
+    tempCanvas.height = canvasType.height;
 
-  return tempCtx.getImageData(0, 0, canvasType.width, canvasType.height);
+    tempCtx.imageSmoothingEnabled = false;
+    tempCtx.fillStyle = rgbString(paddingColor);
+    tempCtx.fillRect(0, 0, canvasType.width, canvasType.height);
+    tempCtx.drawImage(image, offsetX, offsetY, scaledWidth, scaledHeight);
+
+    return tempCtx.getImageData(0, 0, canvasType.width, canvasType.height);
+  }
+
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = image.width;
+  sourceCanvas.height = image.height;
+  const sourceCtx = sourceCanvas.getContext("2d");
+  if (!sourceCtx) throw new Error("Failed to get 2D canvas context");
+  sourceCtx.drawImage(image, 0, 0);
+
+  const scaledCanvas = document.createElement("canvas");
+  scaledCanvas.width = scaledWidth;
+  scaledCanvas.height = scaledHeight;
+
+  await picaInstance.resize(sourceCanvas, scaledCanvas, {
+    filter: resizeOptions.filter,
+    unsharpAmount: resizeOptions.unsharpAmount,
+    unsharpRadius: 0.6,
+    unsharpThreshold: 1,
+  });
+
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = canvasType.width;
+  finalCanvas.height = canvasType.height;
+  const finalCtx = finalCanvas.getContext("2d");
+  if (!finalCtx) throw new Error("Failed to get 2D canvas context");
+
+  finalCtx.fillStyle = rgbString(paddingColor);
+  finalCtx.fillRect(0, 0, canvasType.width, canvasType.height);
+  finalCtx.drawImage(scaledCanvas, offsetX, offsetY);
+
+  return finalCtx.getImageData(0, 0, canvasType.width, canvasType.height);
 };
 
 /**
@@ -81,14 +135,7 @@ export const preprocessForDisplay = (
   tempCanvas.width = canvasWidth;
   tempCanvas.height = canvasHeight;
 
-  let scale: number;
-  if (fitMode === "width") {
-    scale = canvasWidth / image.width;
-  } else if (fitMode === "height") {
-    scale = canvasHeight / image.height;
-  } else {
-    scale = Math.min(canvasWidth / image.width, canvasHeight / image.height);
-  }
+  const scale = computeScale(image.width, image.height, canvasWidth, canvasHeight, fitMode);
 
   const scaledWidth = Math.round(image.width * scale);
   const scaledHeight = Math.round(image.height * scale);

@@ -6,14 +6,18 @@ import {
   type ImageQuantization,
   type PaletteQuantization,
 } from "image-q";
-import { FIXED_PALETTE, findNearestPaletteColor, type RGB } from "./palette";
+import { FIXED_PALETTE, type RGB } from "./palette";
 
 export type QuantMethod = "median-cut" | "neuquant" | "wuquant";
 
-export interface QuantizeResult {
+export interface QuantizeOptions {
+  colors: number;
+  includeFixedPalette: boolean;
+}
+
+interface QuantizeResult {
   quantized: ImageData;
   adaptivePalette: readonly RGB[];
-  combinedPalette: RGB[];
 }
 
 function pointContainerToImageData(pc: utils.PointContainer): ImageData {
@@ -34,101 +38,75 @@ function buildImageQPalette(colors: RGB[]): utils.Palette {
   return palette;
 }
 
-function medianCut(pixels: RGB[], depth: number): RGB[] {
-  if (pixels.length === 0) return [[0, 0, 0]];
-  if (depth === 0) {
-    const sum = pixels.reduce(
-      (acc, pixel) => {
-        const [r, g, b] = pixel;
-        return [acc[0] + r, acc[1] + g, acc[2] + b] as [number, number, number];
-      },
-      [0, 0, 0] as [number, number, number],
-    );
-    const n = pixels.length;
-    return [[Math.round(sum[0] / n), Math.round(sum[1] / n), Math.round(sum[2] / n)]];
+function extractAdaptiveColors(pc: utils.PointContainer, maxColors: number): RGB[] {
+  const pointArray = pc.getPointArray();
+  const colors: RGB[] = [];
+  for (let i = 0; i < Math.min(maxColors, pointArray.length); i++) {
+    const p = pointArray[i];
+    colors.push([p.r, p.g, p.b]);
   }
-
-  const min: [number, number, number] = [Infinity, Infinity, Infinity];
-  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
-  for (const pixel of pixels) {
-    const [r, g, b] = pixel;
-    if (r < min[0]) min[0] = r;
-    if (g < min[1]) min[1] = g;
-    if (b < min[2]) min[2] = b;
-    if (r > max[0]) max[0] = r;
-    if (g > max[1]) max[1] = g;
-    if (b > max[2]) max[2] = b;
-  }
-
-  const ranges: [number, number, number] = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
-  const channel =
-    ranges[0] >= ranges[1] && ranges[0] >= ranges[2] ? 0 : ranges[1] >= ranges[2] ? 1 : 2;
-
-  pixels.sort((a, b) => a[channel as number] - b[channel as number]);
-
-  const mid = Math.floor(pixels.length / 2);
-  return [
-    ...medianCut(pixels.slice(0, mid), depth - 1),
-    ...medianCut(pixels.slice(mid), depth - 1),
-  ];
+  return colors;
 }
 
-function quantizeLegacy(imageData: ImageData): QuantizeResult {
-  const { data, width, height } = imageData;
-  const pixels: RGB[] = [];
-
-  for (let i = 0; i < data.length; i += 4) {
-    pixels.push([data[i], data[i + 1], data[i + 2]]);
-  }
-
-  const adaptive = pixels.length < 16 ? pixels.map((p) => p) : medianCut(pixels, 4);
-  const combined = [...FIXED_PALETTE, ...adaptive];
-
-  const output = new ImageData(width, height);
-
-  for (let i = 0; i < data.length; i += 4) {
-    const bestIdx = findNearestPaletteColor(data[i], data[i + 1], data[i + 2], combined);
-    output.data[i] = combined[bestIdx][0];
-    output.data[i + 1] = combined[bestIdx][1];
-    output.data[i + 2] = combined[bestIdx][2];
-    output.data[i + 3] = data[i + 3];
-  }
-
-  return { quantized: output, adaptivePalette: adaptive, combinedPalette: combined };
+function buildCombinedPalette(adaptiveColors: RGB[], includeFixed: boolean): utils.Palette {
+  const combined = includeFixed ? [...FIXED_PALETTE, ...adaptiveColors] : [...adaptiveColors];
+  return buildImageQPalette(combined);
 }
 
-function quantizeNeuQuant(imageData: ImageData): QuantizeResult {
+function applyPalette(
+  inPC: utils.PointContainer,
+  combinedPalette: utils.Palette,
+): utils.PointContainer {
+  return applyPaletteSync(inPC, combinedPalette, {
+    imageQuantization: "floyd-steinberg" as ImageQuantization,
+    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
+  });
+}
+
+function quantizeMedianCut(imageData: ImageData, options: QuantizeOptions): QuantizeResult {
+  const { data } = imageData;
+  const alpha = new Uint8Array(data.length / 4);
+  for (let i = 0; i < data.length; i += 4) {
+    alpha[i / 4] = data[i + 3];
+  }
+
+  const inPC = utils.PointContainer.fromImageData(imageData);
+
+  const adaptiveQ = buildPaletteSync([inPC], {
+    paletteQuantization: "rgbquant" as PaletteQuantization,
+    colors: options.colors,
+    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
+  });
+
+  const adaptiveColors = extractAdaptiveColors(adaptiveQ.getPointContainer(), options.colors);
+  const combinedPalette = buildCombinedPalette(adaptiveColors, options.includeFixedPalette);
+  const outPC = applyPalette(inPC, combinedPalette);
+
+  const quantized = pointContainerToImageData(outPC);
+  for (let i = 0; i < alpha.length; i++) {
+    quantized.data[i * 4 + 3] = alpha[i];
+  }
+
+  return { quantized, adaptivePalette: adaptiveColors };
+}
+
+function quantizeNeuQuant(imageData: ImageData, options: QuantizeOptions): QuantizeResult {
   const inPC = utils.PointContainer.fromImageData(imageData);
 
   const adaptiveQ = buildPaletteSync([inPC], {
     paletteQuantization: "neuquant" as PaletteQuantization,
-    colors: 12,
+    colors: options.colors,
     colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
   });
 
-  const adaptiveColors: RGB[] = [];
-  const adaptivePC = adaptiveQ.getPointContainer().getPointArray();
-  for (let i = 0; i < Math.min(12, adaptivePC.length); i++) {
-    const p = adaptivePC[i];
-    adaptiveColors.push([p.r, p.g, p.b]);
-  }
+  const adaptiveColors = extractAdaptiveColors(adaptiveQ.getPointContainer(), options.colors);
+  const combinedPalette = buildCombinedPalette(adaptiveColors, options.includeFixedPalette);
+  const outPC = applyPalette(inPC, combinedPalette);
 
-  const combined = [...FIXED_PALETTE, ...adaptiveColors];
-  const combinedPalette = buildImageQPalette(combined);
-
-  const outPC = applyPaletteSync(inPC, combinedPalette, {
-    imageQuantization: "floyd-steinberg" as ImageQuantization,
-    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
-  });
-
-  return {
-    quantized: pointContainerToImageData(outPC),
-    adaptivePalette: adaptiveColors,
-    combinedPalette: combined,
-  };
+  return { quantized: pointContainerToImageData(outPC), adaptivePalette: adaptiveColors };
 }
 
-function quantizeWuQuant(imageData: ImageData): QuantizeResult {
+function quantizeWuQuant(imageData: ImageData, options: QuantizeOptions): QuantizeResult {
   const inPC = utils.PointContainer.fromImageData(imageData);
 
   const fullQ = buildPaletteSync([inPC], {
@@ -137,35 +115,24 @@ function quantizeWuQuant(imageData: ImageData): QuantizeResult {
     colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
   });
 
-  const fullColors: RGB[] = [];
-  const fullPC = fullQ.getPointContainer().getPointArray();
-  for (let i = 0; i < Math.min(12, fullPC.length); i++) {
-    const p = fullPC[i];
-    fullColors.push([p.r, p.g, p.b]);
-  }
+  const fullColors = extractAdaptiveColors(fullQ.getPointContainer(), options.colors);
+  const combinedPalette = buildCombinedPalette(fullColors, options.includeFixedPalette);
+  const outPC = applyPalette(inPC, combinedPalette);
 
-  const combined = [...FIXED_PALETTE, ...fullColors];
-  const combinedPalette = buildImageQPalette(combined);
-
-  const outPC = applyPaletteSync(inPC, combinedPalette, {
-    imageQuantization: "floyd-steinberg" as ImageQuantization,
-    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
-  });
-
-  return {
-    quantized: pointContainerToImageData(outPC),
-    adaptivePalette: fullColors,
-    combinedPalette: combined,
-  };
+  return { quantized: pointContainerToImageData(outPC), adaptivePalette: fullColors };
 }
 
-export function quantize(imageData: ImageData, method: QuantMethod = "median-cut"): QuantizeResult {
+export function quantize(
+  imageData: ImageData,
+  method: QuantMethod = "median-cut",
+  options: QuantizeOptions = { colors: 12, includeFixedPalette: true },
+): QuantizeResult {
   switch (method) {
     case "neuquant":
-      return quantizeNeuQuant(imageData);
+      return quantizeNeuQuant(imageData, options);
     case "wuquant":
-      return quantizeWuQuant(imageData);
+      return quantizeWuQuant(imageData, options);
     default:
-      return quantizeLegacy(imageData);
+      return quantizeMedianCut(imageData, options);
   }
 }
