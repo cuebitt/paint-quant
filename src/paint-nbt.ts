@@ -7,6 +7,12 @@ const PIXEL_COUNTS: Record<number, number> = {
   1: 1024, // 32×32
   2: 512, // 32×16
   3: 512, // 16×32
+  4: 2304, // 48×48
+  5: 4096, // 64×64
+  6: 1536, // 48×32
+  7: 3072, // 64×48
+  8: 1536, // 32×48
+  9: 3072, // 48×64
 };
 
 const CANVAS_TYPE_BY_SIZE: Record<string, number> = {
@@ -14,6 +20,12 @@ const CANVAS_TYPE_BY_SIZE: Record<string, number> = {
   "32x32": 1,
   "32x16": 2,
   "16x32": 3,
+  "48x48": 4,
+  "64x64": 5,
+  "48x32": 6,
+  "64x48": 7,
+  "32x48": 8,
+  "48x64": 9,
 };
 
 export interface PaintingData {
@@ -38,8 +50,8 @@ export function getCanvasTypeIndex(canvas: CanvasType): number {
 type NBTValue = { type: string; value: unknown };
 
 export function writePaintFile(data: PaintingData): Uint8Array {
-  if (data.canvasType < 0 || data.canvasType > 3) {
-    throw new Error(`Invalid canvas type: ${data.canvasType}. Must be 0–3.`);
+  if (data.canvasType < 0 || data.canvasType > 9) {
+    throw new Error(`Invalid canvas type: ${data.canvasType}. Must be 0–9.`);
   }
 
   const expected = PIXEL_COUNTS[data.canvasType];

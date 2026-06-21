@@ -15,9 +15,25 @@ import { ImageComparison } from "./components/ImageComparison";
 import { PalettesSection } from "./components/PalettesSection";
 import { ModeToggle } from "./components/ModeToggle";
 import { AboutDialog } from "./components/AboutDialog";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { appReducer, initialState } from "./app-state";
 
 const NBT_CT_TO_CANVAS_INDEX = [0, 3, 1, 2] as const;
+
+function generateShortId(): string {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, "0"))
+    .join("")
+    .slice(0, 8);
+}
+
+function sanitizeForFilename(s: string): string {
+  return s
+    .replace(/[^a-zA-Z0-9 _-]/g, "")
+    .replace(/\s+/g, "_")
+    .slice(0, 48);
+}
 
 function App() {
   const [state, dispatch] = useReducer(appReducer, initialState);
@@ -196,6 +212,12 @@ function App() {
         originalImageRef.current = null;
 
         dispatch({ type: "SET_CANVAS", canvas: canvasType });
+        dispatch({ type: "SET_TITLE", title: painting.title });
+        dispatch({ type: "SET_AUTHOR", author: painting.author });
+        dispatch({
+          type: "SET_SIGNED",
+          signed: painting.generation === 1 && painting.version === 2,
+        });
         dispatch({
           type: "SET_RESULT",
           preprocessed: dataUrl,
@@ -305,26 +327,36 @@ function App() {
     const name = `${crypto.randomUUID()}_${timestamp}`;
     const canvasTypeIndex = getCanvasTypeIndex(state.selectedCanvas);
 
+    const hasAuthorAndTitle = state.author !== "" && state.title !== "";
     const paintBuffer = writePaintFile({
       canvasType: canvasTypeIndex,
       pixels,
       name,
-      author: "",
-      title: "",
-      generation: 0,
-      version: 99,
+      author: hasAuthorAndTitle ? state.author : "",
+      title: hasAuthorAndTitle ? state.title : "",
+      generation: state.signed ? 1 : 0,
+      version: state.signed ? 2 : 99,
     });
+
+    let downloadName: string;
+    if (hasAuthorAndTitle) {
+      const safeAuthor = sanitizeForFilename(state.author);
+      const safeTitle = sanitizeForFilename(state.title);
+      downloadName = `${safeAuthor}_${safeTitle}.paint`;
+    } else {
+      downloadName = `${generateShortId()}.paint`;
+    }
 
     const blob = new Blob([paintBuffer as BlobPart], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `painting_${name}.paint`;
+    link.download = downloadName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [state.selectedCanvas]);
+  }, [state.selectedCanvas, state.title, state.author, state.signed]);
 
   const handleExportPng = useCallback(() => {
     if (!quantizedDataRef.current) return;
@@ -355,109 +387,122 @@ function App() {
   const hasResults = state.originalUrl && state.preprocessedUrl && state.quantizedUrl;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-accent p-2">
-              <PaintBucketIcon className="size-6 text-accent-foreground" aria-hidden="true" />
+    <TooltipProvider>
+      <div className="flex min-h-screen flex-col bg-background">
+        <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-accent p-2">
+                <PaintBucketIcon className="size-6 text-accent-foreground" aria-hidden="true" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">paintcraft</h1>
+                <p className="text-xs text-muted-foreground">
+                  Resize, quantize, and export images as paint files
+                </p>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <AboutDialog />
+                <ModeToggle />
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">paintcraft</h1>
-              <p className="text-xs text-muted-foreground">
-                Resize, quantize, and export images as paint files
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+          {state.error && (
+            <div className="mx-auto mb-6 max-w-2xl rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+              {state.error}
+            </div>
+          )}
+
+          {!hasResults ? (
+            <div className="mx-auto max-w-2xl">
+              <UploadDropzone onUpload={handleUpload} loading={state.loading} />
+              <p className="mt-4 text-center text-sm text-muted-foreground">
+                Maximum file size: 10MB. Supported formats: PNG, JPG, WEBP, GIF, .paint
               </p>
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <AboutDialog />
-              <ModeToggle />
-            </div>
-          </div>
-        </div>
-      </header>
+          ) : (
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <CanvasSelector
+                  selectedCanvas={state.selectedCanvas}
+                  onChange={(canvas) => dispatch({ type: "SET_CANVAS", canvas })}
+                  disabled={state.loading}
+                />
+                <Toolbar
+                  showGrid={state.showGrid}
+                  onToggleGrid={() => dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid })}
+                  onExportPaintFile={handleExportPaintFile}
+                  onExportPng={handleExportPng}
+                  onReset={() => dispatch({ type: "RESET" })}
+                  quantMethod={state.quantMethod}
+                  onQuantMethodChange={(method) => dispatch({ type: "SET_QUANT_METHOD", method })}
+                  fitMode={state.fitMode}
+                  onFitModeChange={(mode) => dispatch({ type: "SET_FIT_MODE", mode })}
+                  paddingColor={state.paddingColorPreview}
+                  onPaddingColorPreview={(color) =>
+                    dispatch({ type: "SET_PADDING_PREVIEW", color })
+                  }
+                  onPaddingColorChange={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
+                  disabled={state.loading}
+                  quantizationEnabled={state.quantizationEnabled}
+                  onQuantizationEnabledChange={(enabled) =>
+                    dispatch({ type: "SET_QUANTIZATION_ENABLED", enabled })
+                  }
+                  adaptiveColorCount={state.adaptiveColorCount}
+                  onAdaptiveColorCountChange={(count) =>
+                    dispatch({ type: "SET_ADAPTIVE_COLOR_COUNT", count })
+                  }
+                  includeFixedPalette={state.includeFixedPalette}
+                  onIncludeFixedPaletteChange={(include) =>
+                    dispatch({ type: "SET_INCLUDE_FIXED_PALETTE", include })
+                  }
+                  resizeFilter={state.resizeFilter}
+                  onResizeFilterChange={(filter) => dispatch({ type: "SET_RESIZE_FILTER", filter })}
+                  unsharpAmount={state.unsharpAmount}
+                  onUnsharpAmountChange={(amount) =>
+                    dispatch({ type: "SET_UNSHARP_AMOUNT", amount })
+                  }
+                  title={state.title}
+                  onTitleChange={(title) => dispatch({ type: "SET_TITLE", title })}
+                  author={state.author}
+                  onAuthorChange={(author) => dispatch({ type: "SET_AUTHOR", author })}
+                  signed={state.signed}
+                  onSignedChange={(signed) => dispatch({ type: "SET_SIGNED", signed })}
+                />
+              </div>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
-        {state.error && (
-          <div className="mx-auto mb-6 max-w-2xl rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
-            {state.error}
-          </div>
-        )}
-
-        {!hasResults ? (
-          <div className="mx-auto max-w-2xl">
-            <UploadDropzone onUpload={handleUpload} loading={state.loading} />
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Maximum file size: 10MB. Supported formats: PNG, JPG, WEBP, GIF, .paint
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <CanvasSelector
-                selectedCanvas={state.selectedCanvas}
-                onChange={(canvas) => dispatch({ type: "SET_CANVAS", canvas })}
-                disabled={state.loading}
-              />
-              <Toolbar
+              <ImageComparison
+                originalUrl={state.preprocessedUrl}
+                quantizedUrl={state.quantizedUrl}
                 showGrid={state.showGrid}
-                onToggleGrid={() => dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid })}
-                onExportPaintFile={handleExportPaintFile}
-                onExportPng={handleExportPng}
-                onReset={() => dispatch({ type: "RESET" })}
-                quantMethod={state.quantMethod}
-                onQuantMethodChange={(method) => dispatch({ type: "SET_QUANT_METHOD", method })}
-                fitMode={state.fitMode}
-                onFitModeChange={(mode) => dispatch({ type: "SET_FIT_MODE", mode })}
-                paddingColor={state.paddingColorPreview}
-                onPaddingColorPreview={(color) => dispatch({ type: "SET_PADDING_PREVIEW", color })}
-                onPaddingColorChange={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
-                disabled={state.loading}
+                cellsX={state.selectedCanvas.cellsX}
+                cellsY={state.selectedCanvas.cellsY}
+                colorCount={state.quantizationEnabled ? state.adaptiveColorCount : 0}
                 quantizationEnabled={state.quantizationEnabled}
-                onQuantizationEnabledChange={(enabled) =>
-                  dispatch({ type: "SET_QUANTIZATION_ENABLED", enabled })
-                }
-                adaptiveColorCount={state.adaptiveColorCount}
-                onAdaptiveColorCountChange={(count) =>
-                  dispatch({ type: "SET_ADAPTIVE_COLOR_COUNT", count })
-                }
-                includeFixedPalette={state.includeFixedPalette}
-                onIncludeFixedPaletteChange={(include) =>
-                  dispatch({ type: "SET_INCLUDE_FIXED_PALETTE", include })
-                }
-                resizeFilter={state.resizeFilter}
-                onResizeFilterChange={(filter) => dispatch({ type: "SET_RESIZE_FILTER", filter })}
-                unsharpAmount={state.unsharpAmount}
-                onUnsharpAmountChange={(amount) => dispatch({ type: "SET_UNSHARP_AMOUNT", amount })}
               />
+
+              {state.quantizationEnabled && (
+                <PalettesSection
+                  adaptivePalette={state.adaptivePalette}
+                  adaptiveColorCount={state.adaptiveColorCount}
+                />
+              )}
             </div>
+          )}
+        </main>
 
-            <ImageComparison
-              originalUrl={state.preprocessedUrl}
-              quantizedUrl={state.quantizedUrl}
-              showGrid={state.showGrid}
-              cellsX={state.selectedCanvas.cellsX}
-              cellsY={state.selectedCanvas.cellsY}
-              colorCount={state.quantizationEnabled ? state.adaptiveColorCount : 0}
-              quantizationEnabled={state.quantizationEnabled}
-            />
-
-            {state.quantizationEnabled && (
-              <PalettesSection
-                adaptivePalette={state.adaptivePalette}
-                adaptiveColorCount={state.adaptiveColorCount}
-              />
-            )}
+        <footer className="border-t border-border bg-background/80">
+          <div className="mx-auto max-w-7xl px-4 py-4 text-center text-sm text-muted-foreground sm:px-6 lg:px-8">
+            paintcraft - Built with{" "}
+            <HeartIcon className="mx-0.5 inline-block size-3.5 text-accent" /> React + shadcn/ui +
+            TailwindCSS
           </div>
-        )}
-      </main>
-
-      <footer className="border-t border-border bg-background/80">
-        <div className="mx-auto max-w-7xl px-4 py-4 text-center text-sm text-muted-foreground sm:px-6 lg:px-8">
-          paintcraft - Built with <HeartIcon className="mx-0.5 inline-block size-3.5 text-accent" />{" "}
-          React + shadcn/ui + TailwindCSS
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </TooltipProvider>
   );
 }
 

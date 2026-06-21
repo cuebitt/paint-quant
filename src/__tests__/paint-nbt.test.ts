@@ -42,9 +42,33 @@ describe("getCanvasTypeIndex", () => {
     expect(getCanvasTypeIndex(CANVAS_TYPES[3])).toBe(1);
   });
 
+  it("returns 4 for 48×48 (Extra Large)", () => {
+    expect(getCanvasTypeIndex(CANVAS_TYPES[4])).toBe(4);
+  });
+
+  it("returns 5 for 64×64 (Extra Extra Large)", () => {
+    expect(getCanvasTypeIndex(CANVAS_TYPES[5])).toBe(5);
+  });
+
+  it("returns 6 for 48×32 (Extra Long)", () => {
+    expect(getCanvasTypeIndex(CANVAS_TYPES[6])).toBe(6);
+  });
+
+  it("returns 7 for 64×48 (Extra Extra Long)", () => {
+    expect(getCanvasTypeIndex(CANVAS_TYPES[7])).toBe(7);
+  });
+
+  it("returns 8 for 32×48 (Extra Tall)", () => {
+    expect(getCanvasTypeIndex(CANVAS_TYPES[8])).toBe(8);
+  });
+
+  it("returns 9 for 48×64 (Extra Extra Tall)", () => {
+    expect(getCanvasTypeIndex(CANVAS_TYPES[9])).toBe(9);
+  });
+
   it("throws for unsupported canvas dimensions", () => {
     expect(() =>
-      getCanvasTypeIndex({ name: "Custom", width: 48, height: 48, cellsX: 3, cellsY: 3 }),
+      getCanvasTypeIndex({ name: "Custom", width: 100, height: 100, cellsX: 5, cellsY: 5 }),
     ).toThrow("Unsupported canvas dimensions");
   });
 });
@@ -55,8 +79,8 @@ describe("writePaintFile", () => {
     expect(() => writePaintFile(data)).toThrow("Invalid canvas type");
   });
 
-  it("throws for canvasType > 3", () => {
-    const data = makePaintData(4, 256);
+  it("throws for canvasType > 9", () => {
+    const data = makePaintData(10, 256);
     expect(() => writePaintFile(data)).toThrow("Invalid canvas type");
   });
 
@@ -68,6 +92,11 @@ describe("writePaintFile", () => {
   it("throws for wrong pixel count on Large canvas", () => {
     const data = makePaintData(1, 256);
     expect(() => writePaintFile(data)).toThrow("Expected 1024 pixels");
+  });
+
+  it("throws for wrong pixel count on Extra Large canvas", () => {
+    const data = makePaintData(4, 100);
+    expect(() => writePaintFile(data)).toThrow("Expected 2304 pixels");
   });
 
   it("returns a Uint8Array", () => {
@@ -114,6 +143,54 @@ describe("readPaintFile", () => {
     expect(result.pixels).toHaveLength(512);
   });
 
+  it("round-trips Extra Large canvas (ct=4, 2304 pixels)", () => {
+    const data = makePaintData(4, 2304);
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.canvasType).toBe(4);
+    expect(result.pixels).toHaveLength(2304);
+  });
+
+  it("round-trips Extra Extra Large canvas (ct=5, 4096 pixels)", () => {
+    const data = makePaintData(5, 4096);
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.canvasType).toBe(5);
+    expect(result.pixels).toHaveLength(4096);
+  });
+
+  it("round-trips Extra Long canvas (ct=6, 1536 pixels)", () => {
+    const data = makePaintData(6, 1536);
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.canvasType).toBe(6);
+    expect(result.pixels).toHaveLength(1536);
+  });
+
+  it("round-trips Extra Extra Long canvas (ct=7, 3072 pixels)", () => {
+    const data = makePaintData(7, 3072);
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.canvasType).toBe(7);
+    expect(result.pixels).toHaveLength(3072);
+  });
+
+  it("round-trips Extra Tall canvas (ct=8, 1536 pixels)", () => {
+    const data = makePaintData(8, 1536);
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.canvasType).toBe(8);
+    expect(result.pixels).toHaveLength(1536);
+  });
+
+  it("round-trips Extra Extra Tall canvas (ct=9, 3072 pixels)", () => {
+    const data = makePaintData(9, 3072);
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.canvasType).toBe(9);
+    expect(result.pixels).toHaveLength(3072);
+  });
+
   it("preserves RGB pixel values through ARGB conversion", () => {
     const data = makePaintData(0, 256);
     const buf = writePaintFile(data);
@@ -153,5 +230,30 @@ describe("readPaintFile", () => {
     const result = readPaintFile(buf);
     expect(result.generation).toBe(1);
     expect(result.version).toBe(2);
+  });
+
+  it("round-trips locked/signed painting (generation=1, v=2)", () => {
+    const data = makePaintData(0, 256, {
+      generation: 1,
+      version: 2,
+      author: "Player",
+      title: "My Art",
+    });
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.generation).toBe(1);
+    expect(result.version).toBe(2);
+    expect(result.author).toBe("Player");
+    expect(result.title).toBe("My Art");
+  });
+
+  it("excludes author and title when locked but both are empty", () => {
+    const data = makePaintData(0, 256, { generation: 1, version: 2 });
+    const buf = writePaintFile(data);
+    const result = readPaintFile(buf);
+    expect(result.generation).toBe(1);
+    expect(result.version).toBe(2);
+    expect(result.author).toBe("");
+    expect(result.title).toBe("");
   });
 });

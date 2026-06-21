@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { UploadIcon, Grid3x3Icon, PaintBucketIcon, SparklesIcon, ImageIcon } from "lucide-react";
 
 interface ToolbarProps {
@@ -39,6 +40,12 @@ interface ToolbarProps {
   onResizeFilterChange: (filter: ResizeFilter) => void;
   unsharpAmount: number;
   onUnsharpAmountChange: (amount: number) => void;
+  title: string;
+  onTitleChange: (title: string) => void;
+  author: string;
+  onAuthorChange: (author: string) => void;
+  signed: boolean;
+  onSignedChange: (signed: boolean) => void;
 }
 
 export function Toolbar({
@@ -65,6 +72,12 @@ export function Toolbar({
   onResizeFilterChange,
   unsharpAmount,
   onUnsharpAmountChange,
+  title,
+  onTitleChange,
+  author,
+  onAuthorChange,
+  signed,
+  onSignedChange,
 }: ToolbarProps) {
   const [colorCountLocal, setColorCountLocal] = useState(adaptiveColorCount);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -186,6 +199,58 @@ export function Toolbar({
         </div>
       )}
 
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="signed-toggle"
+            checked={signed}
+            onCheckedChange={onSignedChange}
+            disabled={disabled}
+          />
+          <Label
+            htmlFor="signed-toggle"
+            className="flex items-center gap-1.5 text-sm whitespace-nowrap"
+          >
+            {signed ? "Signed (Non-editable)" : "Unsigned (Editable)"}
+          </Label>
+        </div>
+        {signed && (
+          <>
+            <Separator orientation="vertical" className="h-5" />
+            <div className="flex items-center gap-2">
+              <Label htmlFor="painting-title" className="text-sm whitespace-nowrap">
+                Title:
+              </Label>
+              <Input
+                id="painting-title"
+                type="text"
+                maxLength={64}
+                value={title}
+                onChange={(e) => onTitleChange(e.target.value)}
+                disabled={disabled}
+                placeholder="Painting title"
+                className="w-40"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="painting-author" className="text-sm whitespace-nowrap">
+                Author:
+              </Label>
+              <Input
+                id="painting-author"
+                type="text"
+                maxLength={64}
+                value={author}
+                onChange={(e) => onAuthorChange(e.target.value)}
+                disabled={disabled}
+                placeholder="Author name"
+                className="w-40"
+              />
+            </div>
+          </>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <PaddingColorPicker
           selectedColor={paddingColor}
@@ -193,10 +258,23 @@ export function Toolbar({
           onCommit={onPaddingColorChange}
         />
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="secondary" onClick={onExportPaintFile} disabled={disabled}>
-            <PaintBucketIcon data-icon="inline-start" />
-            Export .paint
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="secondary"
+                  onClick={onExportPaintFile}
+                  disabled={disabled || (signed && (author === "" || title === ""))}
+                />
+              }
+            >
+              <PaintBucketIcon data-icon="inline-start" />
+              Export .paint
+            </TooltipTrigger>
+            {signed && (author === "" || title === "") && (
+              <TooltipContent>Title and author are required for signed paintings</TooltipContent>
+            )}
+          </Tooltip>
           <Button variant="secondary" onClick={onExportPng} disabled={disabled}>
             <ImageIcon data-icon="inline-start" />
             Export PNG

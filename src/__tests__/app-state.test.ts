@@ -125,6 +125,27 @@ describe("appReducer", () => {
     expect(state.unsharpAmount).toBe(150);
   });
 
+  it("handles SET_TITLE", () => {
+    const state = appReducer(initialState, { type: "SET_TITLE", title: "Sunset" });
+    expect(state.title).toBe("Sunset");
+  });
+
+  it("handles SET_AUTHOR", () => {
+    const state = appReducer(initialState, { type: "SET_AUTHOR", author: "Player" });
+    expect(state.author).toBe("Player");
+  });
+
+  it("handles SET_SIGNED to true", () => {
+    const state = appReducer(initialState, { type: "SET_SIGNED", signed: true });
+    expect(state.signed).toBe(true);
+  });
+
+  it("handles SET_SIGNED to false", () => {
+    const withSigned = { ...initialState, signed: true };
+    const state = appReducer(withSigned, { type: "SET_SIGNED", signed: false });
+    expect(state.signed).toBe(false);
+  });
+
   it("handles RESET", () => {
     const modified = {
       ...initialState,

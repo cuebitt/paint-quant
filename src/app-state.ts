@@ -23,6 +23,9 @@ export interface AppState {
   includeFixedPalette: boolean;
   resizeFilter: ResizeFilter;
   unsharpAmount: number;
+  title: string;
+  author: string;
+  signed: boolean;
 }
 
 export type AppAction =
@@ -46,6 +49,9 @@ export type AppAction =
   | { type: "SET_INCLUDE_FIXED_PALETTE"; include: boolean }
   | { type: "SET_RESIZE_FILTER"; filter: ResizeFilter }
   | { type: "SET_UNSHARP_AMOUNT"; amount: number }
+  | { type: "SET_TITLE"; title: string }
+  | { type: "SET_AUTHOR"; author: string }
+  | { type: "SET_SIGNED"; signed: boolean }
   | { type: "RESET" };
 
 export const initialState: AppState = {
@@ -66,6 +72,9 @@ export const initialState: AppState = {
   includeFixedPalette: false,
   resizeFilter: "nearest",
   unsharpAmount: 0,
+  title: "",
+  author: "",
+  signed: false,
 };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -106,6 +115,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, resizeFilter: action.filter };
     case "SET_UNSHARP_AMOUNT":
       return { ...state, unsharpAmount: action.amount };
+    case "SET_TITLE":
+      return { ...state, title: action.title };
+    case "SET_AUTHOR":
+      return { ...state, author: action.author };
+    case "SET_SIGNED":
+      return { ...state, signed: action.signed };
     case "RESET":
       return initialState;
   }
