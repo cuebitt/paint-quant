@@ -26,13 +26,13 @@ export function AboutDialog() {
         <div className="space-y-3 text-sm text-muted-foreground">
           <p>
             Import <code>.paint</code> files, or resize and quantize images into <code>.paint</code>{" "}
-            files for use in paint tools. Everything runs in your browser - no servers, no AI, no
-            data leaves your machine.
+            files for use in paint tools. Everything runs in your browser! There is no back-end
+            server, and no AI is used.
           </p>
           <h4 className="font-medium text-foreground">Resize</h4>
           <p>
-            Scale images using nearest neighbor (pixelated) or high-quality pica filters with
-            optional unsharp mask.
+            Scale images using nearest neighbor (pixelated) or high-quality <code>pica</code>{" "}
+            filters with optional unsharp mask.
           </p>
           <h4 className="font-medium text-foreground">Quantize</h4>
           <p>
