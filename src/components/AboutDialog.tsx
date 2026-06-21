@@ -23,6 +23,18 @@ export function AboutDialog() {
             Quantize images to a limited palette and save them as .paint files.
           </DialogDescription>
         </DialogHeader>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Made for the{" "}
+          <a
+            href="https://modrinth.com/mod/joy-of-painting"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            Joy of Painting
+          </a>{" "}
+          mod for Minecraft.
+        </p>
         <div className="space-y-3 text-sm text-muted-foreground">
           <p>
             Import <code>.paint</code> files, or resize and quantize images into <code>.paint</code>{" "}

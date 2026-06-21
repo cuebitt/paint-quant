@@ -2,6 +2,8 @@
 
 A browser-based tool that resizes and optionally quantizes images to a limited palette, then saves the result as a `.paint` file for use in Minecraft.
 
+**Made for the [Joy of Painting](https://modrinth.com/mod/joy-of-painting) mod for Minecraft.**
+
 Upload an image, pick a canvas size, adjust the fit and padding, then export the result.
 
 ## Features
