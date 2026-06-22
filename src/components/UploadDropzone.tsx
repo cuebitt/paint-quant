@@ -76,7 +76,7 @@ export function UploadDropzone({
         type="file"
         accept="image/*,.paint"
         onChange={handleFileChange}
-        className="absolute inset-0 cursor-pointer opacity-0"
+        className="pointer-events-none absolute inset-0 cursor-pointer opacity-0"
         disabled={disabled || loading}
       />
 

@@ -1,8 +1,8 @@
 import { defineConfig } from "vite-plus";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 import path from "path";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
   base: "/paintcraft/",
@@ -33,15 +33,17 @@ export default defineConfig({
     },
     ignorePatterns: ["dist"],
   },
-  plugins: [
-    nodePolyfills({
-      globals: {
-        Buffer: true,
+  plugins: [react(), tailwindcss(), visualizer({ open: true })],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/pica")) return "pica";
+          if (id.includes("node_modules/image-q")) return "image-q";
+        },
       },
-    }),
-    react(),
-    tailwindcss(),
-  ],
+    },
+  },
   test: {
     environment: "happy-dom",
     include: ["src/**/*.{test,spec}.ts"],

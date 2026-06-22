@@ -1,5 +1,4 @@
-import { Buffer } from "buffer";
-import * as nbt from "prismarine-nbt";
+import { read, write, Int8, Int32, type CompoundTag } from "nbtify";
 import type { CanvasType } from "@/types";
 
 const PIXEL_COUNTS: Record<number, number> = {
@@ -47,9 +46,7 @@ export function getCanvasTypeIndex(canvas: CanvasType): number {
   return idx;
 }
 
-type NBTValue = { type: string; value: unknown };
-
-export function writePaintFile(data: PaintingData): Uint8Array {
+export async function writePaintFile(data: PaintingData): Promise<Uint8Array> {
   if (data.canvasType < 0 || data.canvasType > 9) {
     throw new Error(`Invalid canvas type: ${data.canvasType}. Must be 0–9.`);
   }
@@ -63,43 +60,41 @@ export function writePaintFile(data: PaintingData): Uint8Array {
 
   const argbPixels = data.pixels.map(([r, g, b]) => (0xff << 24) | (r << 16) | (g << 8) | b);
 
-  const fields: Record<string, NBTValue> = {
-    ct: nbt.byte(data.canvasType),
-    pixels: nbt.intArray(argbPixels),
-    generation: nbt.int(data.generation),
-    v: nbt.int(data.version),
-    name: nbt.string(data.name),
+  const fields: CompoundTag = {
+    ct: new Int8(data.canvasType),
+    pixels: new Int32Array(argbPixels),
+    generation: new Int32(data.generation),
+    v: new Int32(data.version),
+    name: data.name,
   };
 
   if (data.title !== "" && data.author !== "") {
-    fields.author = nbt.string(data.author);
-    fields.title = nbt.string(data.title);
+    fields.author = data.author;
+    fields.title = data.title;
   }
 
-  const tag = nbt.comp(fields, "") as nbt.NBT;
-  const buf = nbt.writeUncompressed(tag);
-  return new Uint8Array(buf);
+  return write(fields, { rootName: "", endian: "big", compression: null });
 }
 
-export function readPaintFile(data: ArrayBuffer | Uint8Array): PaintingData {
+export async function readPaintFile(data: ArrayBuffer | Uint8Array): Promise<PaintingData> {
   const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-  const buf = Buffer.from(bytes);
-  const tag = nbt.parseUncompressed(buf);
+  const result = await read(bytes, { rootName: true, endian: "big", compression: null });
+  const root = result.data as CompoundTag;
 
-  const ct = (tag.value.ct as NBTValue).value as number;
-  const pixels = (tag.value.pixels as NBTValue).value as number[];
-  const generation = (tag.value.generation as NBTValue).value as number;
-  const v = (tag.value.v as NBTValue).value as number;
-  const name = (tag.value.name as NBTValue).value as string;
+  const ct = (root.ct as Int8).valueOf();
+  const pixels = root.pixels as unknown as Int32Array;
+  const generation = (root.generation as Int32).valueOf();
+  const v = (root.v as Int32).valueOf();
+  const name = root.name as string;
 
   let author = "";
   let title = "";
-  if (tag.value.author && tag.value.title) {
-    author = (tag.value.author as NBTValue).value as string;
-    title = (tag.value.title as NBTValue).value as string;
+  if (root.author && root.title) {
+    author = root.author as string;
+    title = root.title as string;
   }
 
-  const rgbPixels: [number, number, number][] = pixels.map((argb: number) => [
+  const rgbPixels: [number, number, number][] = Array.from(pixels, (argb: number) => [
     (argb >> 16) & 0xff,
     (argb >> 8) & 0xff,
     argb & 0xff,

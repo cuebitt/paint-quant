@@ -74,44 +74,44 @@ describe("getCanvasTypeIndex", () => {
 });
 
 describe("writePaintFile", () => {
-  it("throws for canvasType < 0", () => {
+  it("throws for canvasType < 0", async () => {
     const data = makePaintData(-1, 256);
-    expect(() => writePaintFile(data)).toThrow("Invalid canvas type");
+    await expect(writePaintFile(data)).rejects.toThrow("Invalid canvas type");
   });
 
-  it("throws for canvasType > 9", () => {
+  it("throws for canvasType > 9", async () => {
     const data = makePaintData(10, 256);
-    expect(() => writePaintFile(data)).toThrow("Invalid canvas type");
+    await expect(writePaintFile(data)).rejects.toThrow("Invalid canvas type");
   });
 
-  it("throws for wrong pixel count on Small canvas", () => {
+  it("throws for wrong pixel count on Small canvas", async () => {
     const data = makePaintData(0, 100);
-    expect(() => writePaintFile(data)).toThrow("Expected 256 pixels");
+    await expect(writePaintFile(data)).rejects.toThrow("Expected 256 pixels");
   });
 
-  it("throws for wrong pixel count on Large canvas", () => {
+  it("throws for wrong pixel count on Large canvas", async () => {
     const data = makePaintData(1, 256);
-    expect(() => writePaintFile(data)).toThrow("Expected 1024 pixels");
+    await expect(writePaintFile(data)).rejects.toThrow("Expected 1024 pixels");
   });
 
-  it("throws for wrong pixel count on Extra Large canvas", () => {
+  it("throws for wrong pixel count on Extra Large canvas", async () => {
     const data = makePaintData(4, 100);
-    expect(() => writePaintFile(data)).toThrow("Expected 2304 pixels");
+    await expect(writePaintFile(data)).rejects.toThrow("Expected 2304 pixels");
   });
 
-  it("returns a Uint8Array", () => {
+  it("returns a Uint8Array", async () => {
     const data = makePaintData(0, 256);
-    const result = writePaintFile(data);
+    const result = await writePaintFile(data);
     expect(result).toBeInstanceOf(Uint8Array);
     expect(result.byteLength).toBeGreaterThan(0);
   });
 });
 
 describe("readPaintFile", () => {
-  it("round-trips Small canvas (ct=0, 256 pixels)", () => {
+  it("round-trips Small canvas (ct=0, 256 pixels)", async () => {
     const data = makePaintData(0, 256);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(0);
     expect(result.pixels).toHaveLength(256);
     expect(result.name).toBe("test_painting");
@@ -119,138 +119,138 @@ describe("readPaintFile", () => {
     expect(result.version).toBe(99);
   });
 
-  it("round-trips Large canvas (ct=1, 1024 pixels)", () => {
+  it("round-trips Large canvas (ct=1, 1024 pixels)", async () => {
     const data = makePaintData(1, 1024);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(1);
     expect(result.pixels).toHaveLength(1024);
   });
 
-  it("round-trips Long canvas (ct=2, 512 pixels)", () => {
+  it("round-trips Long canvas (ct=2, 512 pixels)", async () => {
     const data = makePaintData(2, 512);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(2);
     expect(result.pixels).toHaveLength(512);
   });
 
-  it("round-trips Tall canvas (ct=3, 512 pixels)", () => {
+  it("round-trips Tall canvas (ct=3, 512 pixels)", async () => {
     const data = makePaintData(3, 512);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(3);
     expect(result.pixels).toHaveLength(512);
   });
 
-  it("round-trips Extra Large canvas (ct=4, 2304 pixels)", () => {
+  it("round-trips Extra Large canvas (ct=4, 2304 pixels)", async () => {
     const data = makePaintData(4, 2304);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(4);
     expect(result.pixels).toHaveLength(2304);
   });
 
-  it("round-trips Extra Extra Large canvas (ct=5, 4096 pixels)", () => {
+  it("round-trips Extra Extra Large canvas (ct=5, 4096 pixels)", async () => {
     const data = makePaintData(5, 4096);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(5);
     expect(result.pixels).toHaveLength(4096);
   });
 
-  it("round-trips Extra Long canvas (ct=6, 1536 pixels)", () => {
+  it("round-trips Extra Long canvas (ct=6, 1536 pixels)", async () => {
     const data = makePaintData(6, 1536);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(6);
     expect(result.pixels).toHaveLength(1536);
   });
 
-  it("round-trips Extra Extra Long canvas (ct=7, 3072 pixels)", () => {
+  it("round-trips Extra Extra Long canvas (ct=7, 3072 pixels)", async () => {
     const data = makePaintData(7, 3072);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(7);
     expect(result.pixels).toHaveLength(3072);
   });
 
-  it("round-trips Extra Tall canvas (ct=8, 1536 pixels)", () => {
+  it("round-trips Extra Tall canvas (ct=8, 1536 pixels)", async () => {
     const data = makePaintData(8, 1536);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(8);
     expect(result.pixels).toHaveLength(1536);
   });
 
-  it("round-trips Extra Extra Tall canvas (ct=9, 3072 pixels)", () => {
+  it("round-trips Extra Extra Tall canvas (ct=9, 3072 pixels)", async () => {
     const data = makePaintData(9, 3072);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.canvasType).toBe(9);
     expect(result.pixels).toHaveLength(3072);
   });
 
-  it("preserves RGB pixel values through ARGB conversion", () => {
+  it("preserves RGB pixel values through ARGB conversion", async () => {
     const data = makePaintData(0, 256);
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     for (let i = 0; i < data.pixels.length; i++) {
       expect(result.pixels[i]).toEqual(data.pixels[i]);
     }
   });
 
-  it("includes author and title when both are present", () => {
+  it("includes author and title when both are present", async () => {
     const data = makePaintData(0, 256, { author: "Player", title: "Sunset" });
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.author).toBe("Player");
     expect(result.title).toBe("Sunset");
   });
 
-  it("excludes author and title when both are empty", () => {
+  it("excludes author and title when both are empty", async () => {
     const data = makePaintData(0, 256, { author: "", title: "" });
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.author).toBe("");
     expect(result.title).toBe("");
   });
 
-  it("excludes author and title when only one is provided", () => {
+  it("excludes author and title when only one is provided", async () => {
     const data = makePaintData(0, 256, { author: "Player", title: "" });
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.author).toBe("");
     expect(result.title).toBe("");
   });
 
-  it("preserves generation and version fields", () => {
+  it("preserves generation and version fields", async () => {
     const data = makePaintData(0, 256, { generation: 1, version: 2 });
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.generation).toBe(1);
     expect(result.version).toBe(2);
   });
 
-  it("round-trips locked/signed painting (generation=1, v=2)", () => {
+  it("round-trips locked/signed painting (generation=1, v=2)", async () => {
     const data = makePaintData(0, 256, {
       generation: 1,
       version: 2,
       author: "Player",
       title: "My Art",
     });
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.generation).toBe(1);
     expect(result.version).toBe(2);
     expect(result.author).toBe("Player");
     expect(result.title).toBe("My Art");
   });
 
-  it("excludes author and title when locked but both are empty", () => {
+  it("excludes author and title when locked but both are empty", async () => {
     const data = makePaintData(0, 256, { generation: 1, version: 2 });
-    const buf = writePaintFile(data);
-    const result = readPaintFile(buf);
+    const buf = await writePaintFile(data);
+    const result = await readPaintFile(buf);
     expect(result.generation).toBe(1);
     expect(result.version).toBe(2);
     expect(result.author).toBe("");

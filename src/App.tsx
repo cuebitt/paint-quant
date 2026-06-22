@@ -194,9 +194,9 @@ function App() {
   const handleImportPaintFile = useCallback((file: File) => {
     dispatch({ type: "SET_LOADING", loading: true });
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
-        const painting: PaintingData = readPaintFile(reader.result as ArrayBuffer);
+        const painting: PaintingData = await readPaintFile(reader.result as ArrayBuffer);
 
         const canvasTypeIndex = NBT_CT_TO_CANVAS_INDEX[painting.canvasType];
         if (canvasTypeIndex === undefined) {
@@ -337,7 +337,7 @@ function App() {
     processImage,
   ]);
 
-  const handleExportPaintFile = useCallback(() => {
+  const handleExportPaintFile = useCallback(async () => {
     if (!quantizedDataRef.current) return;
 
     const { quantized } = quantizedDataRef.current;
@@ -351,7 +351,7 @@ function App() {
     const canvasTypeIndex = getCanvasTypeIndex(state.selectedCanvas);
 
     const hasAuthorAndTitle = state.author !== "" && state.title !== "";
-    const paintBuffer = writePaintFile({
+    const paintBuffer = await writePaintFile({
       canvasType: canvasTypeIndex,
       pixels,
       name,
