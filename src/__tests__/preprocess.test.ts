@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 
 describe("preprocess exports", () => {
   it("DEFAULT_PADDING_COLOR is white", async () => {

@@ -33,7 +33,15 @@ export default defineConfig({
     },
     ignorePatterns: ["dist"],
   },
-  plugins: [nodePolyfills({ globals: { Buffer: true } }), react(), tailwindcss()],
+  plugins: [
+    nodePolyfills({
+      globals: {
+        Buffer: true,
+      },
+    }),
+    react(),
+    tailwindcss(),
+  ],
   test: {
     environment: "happy-dom",
     include: ["src/**/*.{test,spec}.ts"],

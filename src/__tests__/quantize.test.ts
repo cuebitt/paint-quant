@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { quantize } from "@/quantize";
 import { FIXED_PALETTE, type RGB } from "@/palette";
 

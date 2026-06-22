@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/paint-nbt";
 import type { PaintingData } from "@/paint-nbt";
 import { CANVAS_TYPES } from "@/types";

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { FIXED_PALETTE } from "@/palette";
 
 describe("FIXED_PALETTE", () => {

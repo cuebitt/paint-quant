@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { appReducer, initialState } from "@/app-state";
 import { CANVAS_TYPES } from "@/types";
 
