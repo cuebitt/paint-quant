@@ -6,6 +6,7 @@ import type { ResizeOptions } from "@/preprocess";
 import type { CanvasType, ImageFitMode } from "@/types";
 import { CANVAS_TYPES } from "@/types";
 import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/paint-nbt";
+import { readAsepriteFile } from "@/aseprite";
 import type { PaintingData } from "@/paint-nbt";
 import type { RGB } from "@/palette";
 import { UploadDropzone } from "@/components/UploadDropzone";
@@ -254,10 +255,64 @@ function App() {
     reader.readAsArrayBuffer(file);
   }, []);
 
+  const handleImportAsepriteFile = useCallback((file: File) => {
+    dispatch({ type: "SET_LOADING", loading: true });
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const asepriteData = readAsepriteFile(reader.result as ArrayBuffer);
+
+        const data = new Uint8ClampedArray(asepriteData.width * asepriteData.height * 4);
+        for (let i = 0; i < asepriteData.pixels.length; i++) {
+          const [r, g, b] = asepriteData.pixels[i];
+          data[i * 4] = r;
+          data[i * 4 + 1] = g;
+          data[i * 4 + 2] = b;
+          data[i * 4 + 3] = 255;
+        }
+        const imageData = new ImageData(data, asepriteData.width, asepriteData.height);
+
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = asepriteData.width;
+        tempCanvas.height = asepriteData.height;
+        const tempCtx = tempCanvas.getContext("2d");
+        if (!tempCtx) throw new Error("Failed to get canvas context");
+        tempCtx.putImageData(imageData, 0, 0);
+        const dataUrl = tempCanvas.toDataURL();
+
+        quantizedDataRef.current = {
+          quantized: imageData,
+          adaptivePalette: [],
+        };
+        originalImageRef.current = null;
+
+        dispatch({
+          type: "SET_RESULT",
+          preprocessed: dataUrl,
+          processed: dataUrl,
+          adaptive: [],
+        });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: err instanceof Error ? err.message : "Failed to import Aseprite file",
+        });
+      }
+    };
+    reader.onerror = () => {
+      dispatch({ type: "SET_ERROR", error: "Failed to read file" });
+    };
+    reader.readAsArrayBuffer(file);
+  }, []);
+
   const handleUpload = useCallback(
     (file: File) => {
       if (file.name.endsWith(".paint")) {
         handleImportPaintFile(file);
+        return;
+      }
+      if (file.name.endsWith(".ase") || file.name.endsWith(".aseprite")) {
+        handleImportAsepriteFile(file);
         return;
       }
       dispatch({ type: "SET_LOADING", loading: true });
@@ -303,6 +358,7 @@ function App() {
       state.unsharpAmount,
       processImage,
       handleImportPaintFile,
+      handleImportAsepriteFile,
     ],
   );
 
@@ -445,7 +501,8 @@ function App() {
             <div className="mx-auto max-w-2xl">
               <UploadDropzone onUpload={handleUpload} loading={state.loading} />
               <p className="mt-4 text-center text-sm text-muted-foreground">
-                Maximum file size: 10MB. Supported formats: PNG, JPG, WEBP, GIF, .paint
+                Maximum file size: 10MB. Supported formats: PNG, JPG, WEBP, GIF, .paint, .ase,
+                .aseprite
               </p>
             </div>
           ) : (
