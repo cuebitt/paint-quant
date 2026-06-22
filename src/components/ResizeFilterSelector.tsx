@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/select";
 
 const RESIZE_FILTERS: { value: ResizeFilter; label: string }[] = [
-  { value: "nearest", label: "Nearest Neighbor" },
   { value: "box", label: "Box" },
   { value: "hamming", label: "Hamming" },
   { value: "lanczos2", label: "Lanczos 2" },
   { value: "lanczos3", label: "Lanczos 3" },
   { value: "mks2013", label: "Magic Kernel Sharp 2013" },
+  { value: "nearest", label: "Nearest Neighbor" },
 ];
 
 interface ResizeFilterSelectorProps {

@@ -70,7 +70,7 @@ export const initialState: AppState = {
   quantizationEnabled: false,
   adaptiveColorCount: 12,
   includeFixedPalette: false,
-  resizeFilter: "nearest",
+  resizeFilter: "box",
   unsharpAmount: 0,
   title: "",
   author: "",
