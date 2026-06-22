@@ -482,7 +482,9 @@ function App() {
                   </div>
 
                   <div className="ml-auto flex items-center gap-2">
-                    <Tooltip>
+                    <Tooltip
+                      disabled={!state.signed || (state.author !== "" && state.title !== "")}
+                    >
                       <TooltipTrigger
                         render={
                           <span>
@@ -501,11 +503,9 @@ function App() {
                           </span>
                         }
                       ></TooltipTrigger>
-                      {state.signed && (state.author === "" || state.title === "") && (
-                        <TooltipContent>
-                          Title and author are required for signed paintings
-                        </TooltipContent>
-                      )}
+                      <TooltipContent>
+                        Title and author are required for signed paintings
+                      </TooltipContent>
                     </Tooltip>
                     <Button variant="secondary" onClick={handleExportPng} disabled={state.loading}>
                       <ImageIcon data-icon="inline-start" />
