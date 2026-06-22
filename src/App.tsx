@@ -580,6 +580,15 @@ function App() {
             paintcraft - Built with{" "}
             <HeartIcon className="mx-0.5 inline-block size-3.5 text-accent" /> React + shadcn/ui +
             TailwindCSS
+            <span className="mx-2">·</span>
+            <a
+              href="https://github.com/cuebitt/paintcraft"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              GitHub
+            </a>
           </div>
         </footer>
       </div>

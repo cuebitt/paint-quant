@@ -116,7 +116,6 @@ export function Toolbar({
 
         <Separator orientation="vertical" className="h-5" />
 
-        <Separator orientation="vertical" className="h-5" />
         <div className="flex items-center gap-2">
           <Switch
             id="signed-toggle"
@@ -131,7 +130,7 @@ export function Toolbar({
             {signed ? "Signed (Non-editable)" : "Unsigned (Editable)"}
           </Label>
         </div>
-
+        <Separator orientation="vertical" className="h-5" />
         <div className="flex items-center gap-2">
           <Switch
             id="quantization-toggle"

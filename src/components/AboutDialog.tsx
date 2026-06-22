@@ -7,7 +7,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, ExternalLinkIcon } from "lucide-react";
 
 export function AboutDialog() {
   return (
@@ -55,6 +55,17 @@ export function AboutDialog() {
           <p>
             Import and export <code>.paint</code> files, or save the result as a PNG.
           </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <a
+            href="https://github.com/cuebitt/paintcraft"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline hover:text-foreground"
+          >
+            View on GitHub
+            <ExternalLinkIcon className="size-3.5" />
+          </a>
         </div>
       </DialogContent>
     </Dialog>
