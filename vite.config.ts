@@ -2,7 +2,6 @@ import { defineConfig } from "vite-plus";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
-import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
   base: "/paintcraft/",
@@ -33,13 +32,12 @@ export default defineConfig({
     },
     ignorePatterns: ["dist"],
   },
-  plugins: [react(), tailwindcss(), visualizer({ open: true })],
+  plugins: [react(), tailwindcss()],
   build: {
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules/pica")) return "pica";
-          if (id.includes("node_modules/image-q")) return "image-q";
+          if (id.includes("node_modules/react-dom")) return "react-dom";
         },
       },
     },

@@ -38,7 +38,6 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "happy-dom": "^20.10.6",
-    "rollup-plugin-visualizer": "^7.0.1",
     "shadcn": "^4.11.0",
     "typescript": "~6.0.2",
     "vite": "catalog:",
