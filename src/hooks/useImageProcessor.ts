@@ -51,6 +51,12 @@ export function useImageProcessor(
     quantEnabled: boolean;
     quantOptions: QuantizeOptions;
   } | null>(null);
+  const pendingResultRef = useRef<{
+    type: "preprocessed" | "quantized";
+    processedData: ImageData;
+    adaptivePalette?: readonly RGB[];
+  } | null>(null);
+  const displayDataUrlRef = useRef<string>("");
 
   useEffect(() => {
     const worker = new Worker(new URL("../quantize.worker.ts", import.meta.url), {
@@ -62,8 +68,6 @@ export function useImageProcessor(
       type: "module",
     });
     importWorkerRef.current = importWorker;
-
-    let displayDataUrl = "";
 
     importWorker.onmessage = (e: MessageEvent) => {
       const msg = e.data;
@@ -93,6 +97,10 @@ export function useImageProcessor(
             { filter: s.resizeFilter, unsharpAmount: s.unsharpAmount },
           );
         };
+        img.onerror = () => {
+          URL.revokeObjectURL(dataUrl);
+          dispatch({ type: "SET_ERROR", error: "Failed to load parsed image" });
+        };
         img.src = dataUrl;
       }
     };
@@ -100,6 +108,29 @@ export function useImageProcessor(
     importWorker.onerror = () => {
       dispatch({ type: "SET_ERROR", error: "Import worker error" });
     };
+
+    async function flushPendingResult() {
+      const pendingResult = pendingResultRef.current;
+      const displayDataUrl = displayDataUrlRef.current;
+      if (!pendingResult || !displayDataUrl) return;
+
+      try {
+        const blob = await imageDataToBlob(pendingResult.processedData);
+        dispatch({
+          type: "SET_RESULT",
+          preprocessed: displayDataUrl,
+          processed: URL.createObjectURL(blob),
+          adaptive: pendingResult.adaptivePalette ?? [],
+        });
+      } catch (err) {
+        dispatch({
+          type: "SET_ERROR",
+          error: err instanceof Error ? err.message : "Failed to process result",
+        });
+      }
+      pendingResultRef.current = null;
+      pendingProcessRef.current = null;
+    }
 
     worker.onmessage = (e: MessageEvent) => {
       const msg = e.data;
@@ -115,10 +146,11 @@ export function useImageProcessor(
           msg.imageData.height,
         );
         void imageDataToBlob(displayImageData).then((blob) => {
-          displayDataUrl = URL.createObjectURL(blob);
+          displayDataUrlRef.current = URL.createObjectURL(blob);
           if (pendingProcessRef.current) {
-            pendingProcessRef.current.displayDataUrl = displayDataUrl;
+            pendingProcessRef.current.displayDataUrl = displayDataUrlRef.current;
           }
+          void flushPendingResult();
         });
         return;
       }
@@ -139,15 +171,11 @@ export function useImageProcessor(
             adaptivePalette: [],
           };
 
-          void imageDataToBlob(processedData).then((blob) => {
-            dispatch({
-              type: "SET_RESULT",
-              preprocessed: displayDataUrl,
-              processed: URL.createObjectURL(blob),
-              adaptive: [],
-            });
-          });
-          pendingProcessRef.current = null;
+          pendingResultRef.current = {
+            type: "preprocessed",
+            processedData,
+          };
+          void flushPendingResult();
           return;
         }
 
@@ -180,15 +208,12 @@ export function useImageProcessor(
           adaptivePalette: msg.adaptivePalette,
         };
 
-        void imageDataToBlob(quantized).then((blob) => {
-          dispatch({
-            type: "SET_RESULT",
-            preprocessed: displayDataUrl,
-            processed: URL.createObjectURL(blob),
-            adaptive: msg.adaptivePalette,
-          });
-          pendingProcessRef.current = null;
-        });
+        pendingResultRef.current = {
+          type: "quantized",
+          processedData: quantized,
+          adaptivePalette: msg.adaptivePalette,
+        };
+        void flushPendingResult();
       }
     };
 

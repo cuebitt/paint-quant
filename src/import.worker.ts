@@ -27,6 +27,14 @@ interface ErrorResponse {
   message: string;
 }
 
+async function imageDataToPngBlob(imageData: ImageData): Promise<Blob> {
+  const canvas = new OffscreenCanvas(imageData.width, imageData.height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to get canvas context");
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.convertToBlob({ type: "image/png" });
+}
+
 async function parseSvg(svgText: string): Promise<ParseResponse> {
   const blob = new Blob([svgText], { type: "image/svg+xml" });
   const bitmap = await createImageBitmap(blob);
@@ -43,11 +51,14 @@ async function parseSvg(svgText: string): Promise<ParseResponse> {
   bitmap.close();
   const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
 
+  const pngBlob = await imageDataToPngBlob(imageData);
+  const arrayBuffer = await pngBlob.arrayBuffer();
+
   return {
     type: "result",
     width: bitmap.width,
     height: bitmap.height,
-    imageData: new Uint8ClampedArray(imageData.data.buffer),
+    imageData: new Uint8ClampedArray(arrayBuffer),
   };
 }
 
@@ -55,20 +66,27 @@ async function parseAseprite(buffer: ArrayBuffer): Promise<ParseResponse> {
   const { readAsepriteFile } = await import("@/aseprite");
   const data = readAsepriteFile(buffer);
 
-  const imageData = new Uint8ClampedArray(data.width * data.height * 4);
+  const imageData = new ImageData(
+    new Uint8ClampedArray(data.width * data.height * 4),
+    data.width,
+    data.height,
+  );
   for (let i = 0; i < data.pixels.length; i++) {
     const [r, g, b] = data.pixels[i];
-    imageData[i * 4] = r;
-    imageData[i * 4 + 1] = g;
-    imageData[i * 4 + 2] = b;
-    imageData[i * 4 + 3] = 255;
+    imageData.data[i * 4] = r;
+    imageData.data[i * 4 + 1] = g;
+    imageData.data[i * 4 + 2] = b;
+    imageData.data[i * 4 + 3] = 255;
   }
+
+  const pngBlob = await imageDataToPngBlob(imageData);
+  const arrayBuffer = await pngBlob.arrayBuffer();
 
   return {
     type: "result",
     width: data.width,
     height: data.height,
-    imageData,
+    imageData: new Uint8ClampedArray(arrayBuffer),
   };
 }
 
@@ -76,11 +94,14 @@ async function parsePsd(buffer: ArrayBuffer): Promise<ParseResponse> {
   const { readPsdFile } = await import("@/psd");
   const data = readPsdFile(buffer);
 
+  const pngBlob = await imageDataToPngBlob(data.imageData);
+  const arrayBuffer = await pngBlob.arrayBuffer();
+
   return {
     type: "result",
     width: data.width,
     height: data.height,
-    imageData: new Uint8ClampedArray(data.imageData.data.buffer),
+    imageData: new Uint8ClampedArray(arrayBuffer),
   };
 }
 

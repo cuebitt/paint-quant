@@ -29,16 +29,39 @@ function isIndexedPixel(
   return depth === AsepriteColorDepth.Index && typeof pixel === "number";
 }
 
+function getPaletteEntry(
+  palette: Record<number | string, { red: number; green: number; blue: number; alpha: number }>,
+  index: number,
+): { red: number; green: number; blue: number; alpha: number } | undefined {
+  return palette[index] ?? palette[String(index)];
+}
+
+function blendNormal(
+  srcR: number,
+  srcG: number,
+  srcB: number,
+  srcA: number,
+  dstR: number,
+  dstG: number,
+  dstB: number,
+  dstA: number,
+): [number, number, number, number] {
+  const outA = srcA + dstA * (1 - srcA);
+  if (outA === 0) return [0, 0, 0, 0];
+  const outR = (srcR * srcA + dstR * dstA * (1 - srcA)) / outA;
+  const outG = (srcG * srcA + dstG * dstA * (1 - srcA)) / outA;
+  const outB = (srcB * srcA + dstB * dstA * (1 - srcA)) / outA;
+  return [Math.round(outR), Math.round(outG), Math.round(outB), Math.round(outA)];
+}
+
 function compositeLayers(
   layers: AsepriteLayer[],
   width: number,
   height: number,
   depth: AsepriteColorDepth,
-  palette: Record<number | string, { red: number; green: number; blue: number }>,
+  palette: Record<number | string, { red: number; green: number; blue: number; alpha: number }>,
 ): [number, number, number][] {
-  const pixels: [number, number, number][] = Array.from({ length: width * height }, () => [
-    0, 0, 0,
-  ]);
+  const pixels: number[][] = Array.from({ length: width * height }, () => [0, 0, 0, 0]);
 
   for (const layer of layers) {
     if (!layer.visible || layer.cels.length === 0) continue;
@@ -46,9 +69,8 @@ function compositeLayers(
     const cel = layer.cels[0];
     if (!cel) continue;
 
-    const opacity = layer.opacity / 255;
+    const layerOpacity = layer.opacity / 255;
     const celOpacity = cel.opacity / 255;
-    const combinedOpacity = opacity * celOpacity;
 
     for (let cy = 0; cy < cel.height; cy++) {
       for (let cx = 0; cx < cel.width; cx++) {
@@ -72,17 +94,17 @@ function compositeLayers(
           b = pixel[0];
           a = pixel[1];
         } else if (isIndexedPixel(pixel, depth)) {
-          const entry = palette[pixel];
+          const entry = getPaletteEntry(palette, pixel);
           if (entry) {
             r = entry.red;
             g = entry.green;
             b = entry.blue;
-            a = 255;
+            a = entry.alpha;
           }
         }
 
-        const finalAlpha = (a / 255) * combinedOpacity;
-        if (finalAlpha <= 0) continue;
+        const srcA = (a / 255) * celOpacity * layerOpacity;
+        if (srcA <= 0) continue;
 
         const targetX = cel.x + cx;
         const targetY = cel.y + cy;
@@ -92,18 +114,26 @@ function compositeLayers(
         const existing = pixels[targetIndex];
         if (!existing) continue;
 
-        const srcR = r;
-        const srcG = g;
-        const srcB = b;
+        const [outR, outG, outB, outA] = blendNormal(
+          r,
+          g,
+          b,
+          srcA,
+          existing[0],
+          existing[1],
+          existing[2],
+          existing[3],
+        );
 
-        existing[0] = Math.round(srcR * finalAlpha + existing[0] * (1 - finalAlpha));
-        existing[1] = Math.round(srcG * finalAlpha + existing[1] * (1 - finalAlpha));
-        existing[2] = Math.round(srcB * finalAlpha + existing[2] * (1 - finalAlpha));
+        existing[0] = outR;
+        existing[1] = outG;
+        existing[2] = outB;
+        existing[3] = outA;
       }
     }
   }
 
-  return pixels;
+  return pixels.map(([r, g, b]) => [r, g, b]) as [number, number, number][];
 }
 
 export function readAsepriteFile(data: ArrayBuffer): AsepriteData {
