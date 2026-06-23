@@ -1,4 +1,6 @@
 import { useCallback } from "preact/hooks";
+import type { Dispatch } from "preact/hooks";
+import type { RefObject } from "preact";
 import type { QuantMethod, QuantizeOptions } from "@/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
 import { CANVAS_TYPES } from "@/types";
@@ -33,7 +35,7 @@ function imageDataToBlob(imageData: ImageData): Promise<Blob> {
 }
 
 export function useAppCallbacks(
-  dispatch: React.Dispatch<any>,
+  dispatch: Dispatch<any>,
   state: {
     selectedCanvas: CanvasType;
     quantMethod: QuantMethod;
@@ -48,7 +50,7 @@ export function useAppCallbacks(
     author: string;
     signed: boolean;
   },
-  stateRef: React.RefObject<any>,
+  stateRef: RefObject<any>,
   processImage: (
     img: HTMLImageElement,
     canvas: CanvasType,
@@ -60,14 +62,14 @@ export function useAppCallbacks(
     resizeOptions: ResizeOptions,
   ) => Promise<void>,
   workers: {
-    workerRef: React.RefObject<Worker | null>;
-    importWorkerRef: React.RefObject<Worker | null>;
-    originalImageRef: React.RefObject<HTMLImageElement | null>;
-    quantizedDataRef: React.RefObject<{
+    workerRef: RefObject<Worker | null>;
+    importWorkerRef: RefObject<Worker | null>;
+    originalImageRef: RefObject<HTMLImageElement | null>;
+    quantizedDataRef: RefObject<{
       quantized: ImageData;
       adaptivePalette: readonly RGB[];
     } | null>;
-    pendingProcessRef: React.RefObject<{
+    pendingProcessRef: RefObject<{
       displayDataUrl: string;
       method: QuantMethod;
       quantEnabled: boolean;

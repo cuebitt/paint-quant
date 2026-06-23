@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { Dispatch } from "preact/hooks";
+import type { RefObject } from "preact";
 import type { QuantMethod, QuantizeOptions } from "@/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/palette";
@@ -25,7 +26,7 @@ export function useImageProcessor(
     quantOptions: QuantizeOptions,
     resizeOptions: ResizeOptions,
   ) => Promise<void>,
-  stateRef: React.RefObject<{
+  stateRef: RefObject<{
     selectedCanvas: CanvasType;
     quantMethod: QuantMethod;
     fitMode: ImageFitMode;
