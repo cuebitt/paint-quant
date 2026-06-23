@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { SparklesIcon } from "lucide-react";
 
 interface ToolbarProps {
@@ -62,15 +63,22 @@ export function Toolbar({
   onSignedChange,
 }: ToolbarProps) {
   const [colorCountLocal, setColorCountLocal] = useState(adaptiveColorCount);
+  const [sharpenLocal, setSharpenLocal] = useState(unsharpAmount);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sharpenDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setColorCountLocal(adaptiveColorCount);
   }, [adaptiveColorCount]);
 
   useEffect(() => {
+    setSharpenLocal(unsharpAmount);
+  }, [unsharpAmount]);
+
+  useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (sharpenDebounceRef.current) clearTimeout(sharpenDebounceRef.current);
     };
   }, []);
 
@@ -79,6 +87,14 @@ export function Toolbar({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       onAdaptiveColorCountChange(val);
+    }, 400);
+  };
+
+  const handleSharpenChange = (val: number) => {
+    setSharpenLocal(val);
+    if (sharpenDebounceRef.current) clearTimeout(sharpenDebounceRef.current);
+    sharpenDebounceRef.current = setTimeout(() => {
+      onUnsharpAmountChange(val);
     }, 400);
   };
 
@@ -91,25 +107,38 @@ export function Toolbar({
           disabled={disabled}
         />
         {resizeFilter !== "nearest" && (
-          <div className="flex items-center gap-2">
-            <Label htmlFor="unsharp-amount" className="text-sm whitespace-nowrap">
-              Sharpen:
-            </Label>
-            <Slider
-              id="unsharp-amount"
-              min={0}
-              max={300}
-              step={10}
-              value={[unsharpAmount]}
-              onValueChange={(v) => {
-                const val = Array.isArray(v) ? v[0] : v;
-                onUnsharpAmountChange(val);
-              }}
-              disabled={disabled}
-              className="w-28"
-            />
-            <span className="w-8 text-right text-sm text-muted-foreground">{unsharpAmount}</span>
-          </div>
+          <Tooltip disabled={sharpenLocal === 0}>
+            <TooltipTrigger render={<div className="flex items-center gap-2" />}>
+              <Switch
+                id="sharpen-toggle"
+                checked={sharpenLocal > 0}
+                onCheckedChange={(checked) => {
+                  handleSharpenChange(checked ? 150 : 0);
+                }}
+                disabled={disabled}
+              />
+              <Label htmlFor="sharpen-toggle" className="text-sm whitespace-nowrap">
+                Sharpen
+              </Label>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8} className="!block w-56 p-3">
+              <div className="flex items-center gap-2">
+                <Slider
+                  min={10}
+                  max={300}
+                  step={10}
+                  value={[sharpenLocal]}
+                  onValueChange={(v) => {
+                    const val = Array.isArray(v) ? v[0] : v;
+                    handleSharpenChange(val);
+                  }}
+                  disabled={disabled}
+                  className="flex-1"
+                />
+                <span className="w-8 text-right text-xs text-background">{sharpenLocal}</span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
         )}
         <Separator orientation="vertical" className="h-5" />
         <FitModeSelector selectedMode={fitMode} onChange={onFitModeChange} disabled={disabled} />
