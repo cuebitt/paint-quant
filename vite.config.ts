@@ -1,5 +1,5 @@
 import { defineConfig } from "vite-plus";
-import react from "@vitejs/plugin-react";
+import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
@@ -8,6 +8,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      react: "preact/compat",
+      "react-dom": "preact/compat",
+      "react-dom/client": "preact/compat/client",
+      "react/jsx-runtime": "preact/jsx-runtime",
     },
   },
   staged: {
@@ -32,12 +36,12 @@ export default defineConfig({
     },
     ignorePatterns: ["dist"],
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [preact(), tailwindcss()],
   build: {
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules/react-dom")) return "react-dom";
+          if (id.includes("node_modules/preact/compat")) return "preact-compat";
         },
       },
     },

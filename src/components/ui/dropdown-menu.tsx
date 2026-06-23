@@ -9,10 +9,12 @@ function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
 }
 
 function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
+  // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
   return <MenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />;
 }
 
 function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
+  // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
   return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
 }
 
@@ -34,6 +36,7 @@ function DropdownMenuContent({
         side={side}
         sideOffset={sideOffset}
       >
+        {/* @ts-expect-error -- preact/react type mismatch for @base-ui/react props */}
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
@@ -48,6 +51,7 @@ function DropdownMenuContent({
 }
 
 function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
+  // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 }
 
@@ -59,6 +63,7 @@ function DropdownMenuLabel({
   inset?: boolean;
 }) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <MenuPrimitive.GroupLabel
       data-slot="dropdown-menu-label"
       data-inset={inset}
@@ -81,6 +86,7 @@ function DropdownMenuItem({
   variant?: "default" | "destructive";
 }) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
       data-inset={inset}
@@ -107,6 +113,7 @@ function DropdownMenuSubTrigger({
   inset?: boolean;
 }) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <MenuPrimitive.SubmenuTrigger
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
@@ -156,6 +163,7 @@ function DropdownMenuCheckboxItem({
   inset?: boolean;
 }) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <MenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
@@ -192,6 +200,7 @@ function DropdownMenuRadioItem({
   inset?: boolean;
 }) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <MenuPrimitive.RadioItem
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
@@ -216,6 +225,7 @@ function DropdownMenuRadioItem({
 
 function DropdownMenuSeparator({ className, ...props }: MenuPrimitive.Separator.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <MenuPrimitive.Separator
       data-slot="dropdown-menu-separator"
       className={cn("-mx-1 my-1 h-px bg-border", className)}

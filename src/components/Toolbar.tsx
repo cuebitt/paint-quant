@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "preact/hooks";
 import type { QuantMethod } from "@/quantize";
 import type { ImageFitMode } from "@/types";
 import type { ResizeFilter } from "@/preprocess";
@@ -189,7 +189,7 @@ export function Toolbar({
                 max={256}
                 value={colorCountLocal}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
+                  const val = parseInt((e.target as HTMLInputElement).value, 10);
                   if (!isNaN(val) && val >= 1 && val <= 256) {
                     handleColorCountChange(val);
                   }
@@ -222,7 +222,7 @@ export function Toolbar({
                 type="text"
                 maxLength={64}
                 value={title}
-                onChange={(e) => onTitleChange(e.target.value)}
+                onChange={(e) => onTitleChange((e.target as HTMLInputElement).value)}
                 disabled={disabled}
                 placeholder="Painting title"
                 className="w-40"
@@ -237,7 +237,7 @@ export function Toolbar({
                 type="text"
                 maxLength={64}
                 value={author}
-                onChange={(e) => onAuthorChange(e.target.value)}
+                onChange={(e) => onAuthorChange((e.target as HTMLInputElement).value)}
                 disabled={disabled}
                 placeholder="Author name"
                 className="w-40"

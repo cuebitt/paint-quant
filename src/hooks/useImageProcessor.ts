@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import type { Dispatch } from "react";
+import { useEffect, useRef } from "preact/hooks";
+import type { Dispatch } from "preact/hooks";
 import type { QuantMethod, QuantizeOptions } from "@/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/palette";
@@ -52,12 +52,12 @@ export function useImageProcessor(
   } | null>(null);
 
   useEffect(() => {
-    const worker = new Worker(new URL("./quantize.worker.ts", import.meta.url), {
+    const worker = new Worker(new URL("../quantize.worker.ts", import.meta.url), {
       type: "module",
     });
     workerRef.current = worker;
 
-    const importWorker = new Worker(new URL("./import.worker.ts", import.meta.url), {
+    const importWorker = new Worker(new URL("../import.worker.ts", import.meta.url), {
       type: "module",
     });
     importWorkerRef.current = importWorker;
@@ -80,6 +80,7 @@ export function useImageProcessor(
           originalImageRef.current = img;
           dispatch({ type: "SET_ORIGINAL", url: dataUrl });
           const s = stateRef.current;
+          if (!s) return;
           void processImage(
             img,
             s.selectedCanvas,

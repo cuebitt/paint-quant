@@ -10,6 +10,7 @@ function Switch({
   size?: "sm" | "default";
 }) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SwitchPrimitive.Root
       data-slot="switch"
       data-size={size}

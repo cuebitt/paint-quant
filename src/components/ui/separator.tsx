@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 function Separator({ className, orientation = "horizontal", ...props }: SeparatorPrimitive.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SeparatorPrimitive
       data-slot="separator"
       orientation={orientation}

@@ -14,10 +14,15 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "jsxImportSource": "preact",
 
     /* Path aliases */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "react": ["./node_modules/preact/compat/src/index.d.ts"],
+      "react-dom": ["./node_modules/preact/compat/src/index.d.ts"],
+      "react-dom/client": ["./node_modules/preact/compat/src/index.d.ts"],
+      "react/jsx-runtime": ["./node_modules/preact/jsx-runtime/src/index.d.ts"]
     },
 
     /* Linting */

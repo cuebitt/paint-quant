@@ -12,7 +12,7 @@ import { InfoIcon, ExternalLinkIcon } from "lucide-react";
 export function AboutDialog() {
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="ghost" size="icon-sm" />}>
+      <DialogTrigger nativeButton={false} render={<Button variant="ghost" size="icon-sm" />}>
         <InfoIcon className="size-4" />
         <span className="sr-only">About paintcraft</span>
       </DialogTrigger>

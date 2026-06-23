@@ -17,6 +17,7 @@ function Slider({
       : [min, max];
 
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SliderPrimitive.Root
       className={cn("data-horizontal:w-full data-vertical:h-full", className)}
       data-slot="slider"

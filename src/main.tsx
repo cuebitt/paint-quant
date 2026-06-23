@@ -1,13 +1,15 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { render } from "preact";
 import "./index.tailwind.css";
 import App from "@/App";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <App />
-    </ThemeProvider>
-  </StrictMode>,
+if (import.meta.env.DEV) {
+  void import("preact-devtools");
+}
+
+render(
+  <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <App />
+  </ThemeProvider>,
+  document.getElementById("root")!,
 );

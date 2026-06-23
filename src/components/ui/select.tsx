@@ -8,6 +8,7 @@ const Select = SelectPrimitive.Root;
 
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SelectPrimitive.Group
       data-slot="select-group"
       className={cn("scroll-my-1 p-1", className)}
@@ -18,6 +19,7 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
 
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("flex flex-1 text-left", className)}
@@ -35,6 +37,7 @@ function SelectTrigger({
   size?: "sm" | "default";
 }) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
@@ -76,6 +79,7 @@ function SelectContent({
         alignItemWithTrigger={alignItemWithTrigger}
         className="isolate z-50"
       >
+        {/* @ts-expect-error -- preact/react type mismatch for @base-ui/react props */}
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
@@ -96,6 +100,7 @@ function SelectContent({
 
 function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SelectPrimitive.GroupLabel
       data-slot="select-label"
       className={cn("px-1.5 py-1 text-xs text-muted-foreground", className)}
@@ -130,6 +135,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
 
 function SelectSeparator({ className, ...props }: SelectPrimitive.Separator.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <SelectPrimitive.Separator
       data-slot="select-separator"
       className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}

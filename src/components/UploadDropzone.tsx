@@ -1,4 +1,5 @@
-import { useRef, useState, type DragEvent, type ChangeEvent } from "react";
+import { useRef, useState } from "preact/hooks";
+import type { TargetedKeyboardEvent } from "preact";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2Icon, UploadIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,7 @@ export function UploadDropzone({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragActive, setIsDragActive] = useState(false);
 
-  const handleDrag = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrag = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -27,19 +28,20 @@ export function UploadDropzone({
     }
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
       onUpload(e.dataTransfer.files[0]);
     }
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      onUpload(e.target.files[0]);
+  const handleFileChange = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      onUpload(target.files[0]);
     }
   };
 
@@ -47,7 +49,7 @@ export function UploadDropzone({
     fileInputRef.current?.click();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: TargetedKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       openFileDialog();

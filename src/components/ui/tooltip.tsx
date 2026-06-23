@@ -11,6 +11,7 @@ function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
 }
 
 function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
+  // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
@@ -33,6 +34,7 @@ function TooltipContent({
         sideOffset={sideOffset}
         className="isolate z-50"
       >
+        {/* @ts-expect-error -- preact/react type mismatch for @base-ui/react props */}
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(

@@ -25,8 +25,8 @@ export function PopoverPicker({ color, onChange, onChangeEnd }: PopoverPickerPro
               type="text"
               value={color}
               aria-label="Hex color"
-              onChange={(e) => {
-                const val = e.target.value;
+              onInput={(e) => {
+                const val = (e.target as HTMLInputElement).value;
                 if (HEX_COLOR_RE.test(val)) {
                   onChange(val);
                 }

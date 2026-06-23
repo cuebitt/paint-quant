@@ -1,4 +1,6 @@
-import { createContext, useCallback, use, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "preact/hooks";
+import { createContext } from "preact";
+import type { ComponentChildren } from "preact";
 
 type Theme = "dark" | "light" | "system";
 
@@ -20,7 +22,7 @@ export const ACCENT_COLORS: AccentColor[] = [
 ];
 
 type ThemeProviderProps = {
-  children: React.ReactNode;
+  children: ComponentChildren;
   defaultTheme?: Theme;
   storageKey?: string;
 };
@@ -103,7 +105,7 @@ export function ThemeProvider({
 }
 
 export const useTheme = () => {
-  const context = use(ThemeProviderContext);
+  const context = useContext(ThemeProviderContext);
   if (context === undefined) throw new Error("useTheme must be used within a ThemeProvider");
   return context;
 };

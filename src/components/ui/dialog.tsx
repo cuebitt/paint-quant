@@ -10,19 +10,23 @@ function Dialog({ ...props }: DialogPrimitive.Root.Props) {
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
+  // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
 function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
+  // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
+  // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
 function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
@@ -45,6 +49,7 @@ function DialogContent({
   return (
     <DialogPortal>
       <DialogOverlay />
+      {/* @ts-expect-error -- preact/react type mismatch for @base-ui/react props */}
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
@@ -57,6 +62,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
+            nativeButton={false}
             render={<Button variant="ghost" className="absolute top-2 right-2" size="icon-sm" />}
           >
             <XIcon />
@@ -93,7 +99,9 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>Close</DialogPrimitive.Close>
+        <DialogPrimitive.Close nativeButton={false} render={<Button variant="outline" />}>
+          Close
+        </DialogPrimitive.Close>
       )}
     </div>
   );
@@ -101,6 +109,7 @@ function DialogFooter({
 
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn("font-heading text-base leading-none font-medium", className)}
@@ -111,6 +120,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
 
 function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
   return (
+    // @ts-expect-error -- preact/react type mismatch for @base-ui/react props
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(

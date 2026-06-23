@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback } from "preact/hooks";
 import type { QuantMethod, QuantizeOptions } from "@/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
 import { CANVAS_TYPES } from "@/types";

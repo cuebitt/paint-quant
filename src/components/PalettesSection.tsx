@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from "preact/hooks";
 import type { RGB } from "@/palette";
 import { FIXED_PALETTE } from "@/palette";
 import { PaletteDisplay } from "@/components/PaletteDisplay";
