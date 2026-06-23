@@ -4,10 +4,11 @@ A browser-based tool that resizes and optionally quantizes images to a limited p
 
 **Made for the [Joy of Painting](https://modrinth.com/mod/joy-of-painting) mod for Minecraft.**
 
-Upload an image, pick a canvas size, adjust the fit and padding, then export the result.
+Upload an image (PNG, JPEG, PSD, Aseprite, SVG), pick a canvas size, adjust the fit and padding, then export the result.
 
 ## Features
 
+- **Multi-format import** - PNG, JPEG, PSD, Aseprite (.aseprite), and SVG support
 - **Image quantization** (optional) using Median Cut, NeuQuant, or WuQuant algorithms (via [image-q](https://github.com/ImgPix/image-q))
 - **1–256 adaptive colors** with optional fixed palette inclusion
 - **10 canvas presets** from 16x16 to 64x64, in various aspect ratios
@@ -98,7 +99,7 @@ The `.paint` file is an uncompressed NBT (Named Binary Tag) binary, compatible w
 
 ## Libraries
 
-- [React](https://github.com/facebook/react) + [TypeScript](https://github.com/microsoft/TypeScript) - UI framework
+- [Preact](https://github.com/preactjs/preact) + [TypeScript](https://github.com/microsoft/TypeScript) - UI framework
 - [Vite-plus](https://github.com/voidzero-dev/vite-plus) - build tool and CLI
 - [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) - utility-first CSS
 - [lucide-react](https://github.com/lucide-icons/lucide) - icons
