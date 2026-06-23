@@ -62,38 +62,36 @@ export function Toolbar({
   signed,
   onSignedChange,
 }: ToolbarProps) {
-  const [colorCountLocal, setColorCountLocal] = useState(adaptiveColorCount);
-  const [sharpenLocal, setSharpenLocal] = useState(unsharpAmount);
+  const [pendingColorCount, setPendingColorCount] = useState<number | null>(null);
+  const [pendingSharpen, setPendingSharpen] = useState<number | null>(null);
+  const colorCountLocal = pendingColorCount ?? adaptiveColorCount;
+  const sharpenLocal = pendingSharpen ?? unsharpAmount;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sharpenDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setColorCountLocal(adaptiveColorCount);
-  }, [adaptiveColorCount]);
-
-  useEffect(() => {
-    setSharpenLocal(unsharpAmount);
-  }, [unsharpAmount]);
-
-  useEffect(() => {
+    const pendingDebounce = debounceRef.current;
+    const pendingSharpen = sharpenDebounceRef.current;
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (sharpenDebounceRef.current) clearTimeout(sharpenDebounceRef.current);
+      if (pendingDebounce) clearTimeout(pendingDebounce);
+      if (pendingSharpen) clearTimeout(pendingSharpen);
     };
-  }, []);
+  }, [debounceRef, sharpenDebounceRef]);
 
   const handleColorCountChange = (val: number) => {
-    setColorCountLocal(val);
+    setPendingColorCount(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      setPendingColorCount(null);
       onAdaptiveColorCountChange(val);
     }, 400);
   };
 
   const handleSharpenChange = (val: number) => {
-    setSharpenLocal(val);
+    setPendingSharpen(val);
     if (sharpenDebounceRef.current) clearTimeout(sharpenDebounceRef.current);
     sharpenDebounceRef.current = setTimeout(() => {
+      setPendingSharpen(null);
       onUnsharpAmountChange(val);
     }, 400);
   };

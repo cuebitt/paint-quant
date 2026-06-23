@@ -18,8 +18,8 @@ export function PaletteDisplay({ title, colors }: PaletteDisplayProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-6 gap-2">
-          {colors.map((color, i) => (
-            <div key={`${rgbToHex(color)}-${i}`} className="flex flex-col items-center gap-1">
+          {colors.map((color) => (
+            <div key={rgbToHex(color)} className="flex flex-col items-center gap-1">
               <div
                 className="size-8 rounded-md border border-border shadow-sm"
                 style={{ backgroundColor: rgbToHex(color) }}

@@ -74,10 +74,11 @@ export function UploadDropzone({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.paint,.ase,.aseprite"
+        accept="image/*,.paint,.ase,.aseprite,.psd,.svg"
         onChange={handleFileChange}
         className="pointer-events-none absolute inset-0 cursor-pointer opacity-0"
         disabled={disabled || loading}
+        aria-label="Upload image"
       />
 
       <CardHeader className="items-center text-center">
@@ -99,7 +100,7 @@ export function UploadDropzone({
 
       <CardContent className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2">
-          {["PNG", "JPG", "WEBP", "GIF", "PAINT", "ASE"].map((ext) => (
+          {["PNG", "JPG", "WEBP", "GIF", "PAINT", "ASE", "PSD", "SVG"].map((ext) => (
             <span key={ext} className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
               {ext}
             </span>

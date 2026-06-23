@@ -20,8 +20,6 @@ export function ImageDisplay({
 }: ImageDisplayProps) {
   if (!imageUrl) return null;
 
-  const gridCells = Array.from({ length: cellsX * cellsY });
-
   return (
     <Card className={className}>
       <CardHeader>
@@ -34,28 +32,19 @@ export function ImageDisplay({
         <div className="relative overflow-hidden rounded-xl border-2 border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
           <img
             src={imageUrl}
-            alt={`${title} - quantized image preview`}
+            alt={`${title} - quantized preview`}
             className="image-rendering-pixelated h-auto w-full"
           />
           {showGrid && (
             <div
               className="pointer-events-none absolute inset-0 z-10"
               style={{
-                display: "grid",
-                gridTemplateColumns: `repeat(${cellsX}, 1fr)`,
-                gridTemplateRows: `repeat(${cellsY}, 1fr)`,
+                backgroundImage: `
+                  repeating-linear-gradient(90deg, var(--accent) 0, var(--accent) 1px, transparent 1px, transparent ${100 / cellsX}%),
+                  repeating-linear-gradient(0deg, var(--accent) 0, var(--accent) 1px, transparent 1px, transparent ${100 / cellsY}%)
+                `,
               }}
-            >
-              {gridCells.map((_, i) => (
-                <div
-                  key={i}
-                  className="size-auto border bg-transparent"
-                  style={{
-                    borderColor: "var(--accent)",
-                  }}
-                />
-              ))}
-            </div>
+            />
           )}
         </div>
       </CardContent>

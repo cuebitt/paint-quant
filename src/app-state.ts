@@ -36,6 +36,15 @@ export type AppAction =
       processed: string;
       adaptive: readonly RGB[];
     }
+  | {
+      type: "IMPORT_PAINT";
+      canvas: CanvasType;
+      title: string;
+      author: string;
+      signed: boolean;
+      preprocessed: string;
+      processed: string;
+    }
   | { type: "SET_LOADING"; loading: boolean }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "SET_CANVAS"; canvas: CanvasType }
@@ -87,6 +96,18 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         preprocessedUrl: action.preprocessed,
         quantizedUrl: action.processed,
         adaptivePalette: action.adaptive,
+        loading: false,
+      };
+    case "IMPORT_PAINT":
+      return {
+        ...state,
+        selectedCanvas: action.canvas,
+        title: action.title,
+        author: action.author,
+        signed: action.signed,
+        preprocessedUrl: action.preprocessed,
+        quantizedUrl: action.processed,
+        originalUrl: action.preprocessed,
         loading: false,
       };
     case "SET_LOADING":
