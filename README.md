@@ -1,14 +1,14 @@
-# paintcraft
+# paintcraft 🎨
 
 Converts images into `.paint` files for the [Joy of Painting](https://modrinth.com/mod/joy-of-painting) Minecraft mod. Drop in an image, pick a canvas size, tweak the fit and padding, export.
 
-Supports PNG, JPEG, WEBP, GIF, PSD, Aseprite, and SVG. Can also re-import `.paint` files if you want to keep editing.
+Supports PNG, JPEG, WEBP, GIF, PSD, Aseprite, Pixil, Piskel, and SVG. Can also re-import `.paint` files if you want to keep editing.
 
 ## What it does
 
 **Import & export**
 
-- Loads most common image formats plus PSD and Aseprite (`.ase`, `.aseprite`)
+- Loads most common image formats plus PSD, Aseprite, Pixil, and Piskel (`.ase`, `.aseprite`, `.pixil`, `.piskel`)
 - Re-imports `.paint` files for further editing
 - Exports as `.paint` NBT, PNG, or copies to clipboard
 
@@ -37,6 +37,10 @@ Supports PNG, JPEG, WEBP, GIF, PSD, Aseprite, and SVG. Can also re-import `.pain
 - Undo/redo with 50-state history
 - Keyboard shortcuts — see [below](#keyboard-shortcuts)
 - Saves your quantization method, fit mode, resize filter, and theme to localStorage
+
+## What it does not
+
+`paintcraft` does not include any painting/pixel editing features. Use [Pixil](http://pixilart.com), [Piskel](http://piskelapp.com), or [PhotoPea](http://photopea.com).
 
 ## Getting started
 
@@ -101,7 +105,7 @@ An uncompressed NBT binary. Fields:
 | `pixels`     | int array | ARGB pixel values                             |
 | `generation` | int       | 0 = unsigned, 1 = signed                      |
 | `v`          | int       | 99 = unsigned, 2 = signed                     |
-| `name`       | string    | Painting name                                 |
+| `name`       | string    | Auto-generated UUID-based identifier          |
 | `title`      | string    | Only written if both title and author are set |
 | `author`     | string    | Only written if both title and author are set |
 
