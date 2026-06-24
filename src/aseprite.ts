@@ -102,8 +102,8 @@ function parseLayerMetadata(buf: ArrayBuffer): RawLayerMeta[] {
         level,
         type: layerType,
         visible: !!(flags & 1),
-        opacity,
-        blend,
+        opacity: opacity!,
+        blend: blend as AsepriteLayerBlendMode,
         celIndex: [],
       });
     } else if (chunkType === 0x2005) {
@@ -119,7 +119,7 @@ function parseLayerMetadata(buf: ArrayBuffer): RawLayerMeta[] {
   }
 
   for (let i = 0; i < layers.length; i++) {
-    layers[i].celIndex = layerCels.has(i) ? [i] : [];
+    layers[i]!.celIndex = layerCels.has(i) ? [i] : [];
   }
 
   return layers;
@@ -442,7 +442,7 @@ function applyBlendMode(
     case AsepriteLayerBlendMode.Divide:
       return blendDivide(srcR, srcG, srcB, srcA, dstR, dstG, dstB, dstA);
     default:
-      return blendNormal(srcR, srcG, srcB, srcA, dstR, dstG, dstB, dstA);
+      return [0, 0, 0, 0];
   }
 }
 
@@ -453,12 +453,12 @@ function getPixelColor(
 ): [number, number, number, number] {
   if (depth === AsepriteColorDepth.Rgba) {
     const p = pixel as unknown as Uint8Array;
-    return [p[0], p[1], p[2], p[3]];
+    return [p[0]!, p[1]!, p[2]!, p[3]!];
   }
 
   if (depth === AsepriteColorDepth.Grayscale) {
     const p = pixel as unknown as Uint8Array;
-    return [p[0], p[0], p[0], p[1]];
+    return [p[0]!, p[0]!, p[0]!, p[1]!];
   }
 
   if (depth === AsepriteColorDepth.Index) {
@@ -508,10 +508,10 @@ function compositeLayers(
           if (targetX < 0 || targetX >= width || targetY < 0 || targetY >= height) continue;
 
           const targetIndex = (targetY * width + targetX) * 4;
-          const dstR = data[targetIndex];
-          const dstG = data[targetIndex + 1];
-          const dstB = data[targetIndex + 2];
-          const dstA = data[targetIndex + 3] / 255;
+          const dstR = data[targetIndex]!;
+          const dstG = data[targetIndex + 1]!;
+          const dstB = data[targetIndex + 2]!;
+          const dstA = data[targetIndex + 3]! / 255;
 
           const [outR, outG, outB, outA] = applyBlendMode(
             layer.blendMode,
@@ -519,7 +519,7 @@ function compositeLayers(
             g,
             b,
             finalOpacity,
-            dstR,
+            dstR!,
             dstG,
             dstB,
             dstA,

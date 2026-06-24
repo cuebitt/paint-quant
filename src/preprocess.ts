@@ -29,9 +29,6 @@ function computeScale(
   return Math.min(targetWidth / imageWidth, targetHeight / imageHeight);
 }
 
-/**
- * Preprocess uploaded image to fit specified canvas dimensions
- */
 export const preprocessImageForCanvas = async (
   image: HTMLImageElement,
   canvasType: CanvasType,
@@ -98,9 +95,6 @@ export const preprocessImageForCanvas = async (
   return finalCtx.getImageData(0, 0, canvasType.width, canvasType.height);
 };
 
-/**
- * Preprocess image for display at full resolution, padded to canvas aspect ratio
- */
 export const preprocessForDisplay = (
   image: HTMLImageElement,
   canvasType: CanvasType,
@@ -119,14 +113,12 @@ export const preprocessForDisplay = (
   } else if (fitMode === "height") {
     canvasHeight = image.height;
     canvasWidth = Math.round(image.height * targetRatio);
+  } else if (imageRatio > targetRatio) {
+    canvasWidth = image.width;
+    canvasHeight = Math.round(image.width / targetRatio);
   } else {
-    if (imageRatio > targetRatio) {
-      canvasWidth = image.width;
-      canvasHeight = Math.round(image.width / targetRatio);
-    } else {
-      canvasHeight = image.height;
-      canvasWidth = Math.round(image.height * targetRatio);
-    }
+    canvasHeight = image.height;
+    canvasWidth = Math.round(image.height * targetRatio);
   }
 
   const tempCanvas = document.createElement("canvas");

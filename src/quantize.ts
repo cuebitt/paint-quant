@@ -42,7 +42,7 @@ function extractAdaptiveColors(pc: utils.PointContainer, maxColors: number): RGB
   const pointArray = pc.getPointArray();
   const colors: RGB[] = [];
   for (let i = 0; i < Math.min(maxColors, pointArray.length); i++) {
-    const p = pointArray[i];
+    const p = pointArray[i]!;
     colors.push([p.r, p.g, p.b]);
   }
   return colors;
@@ -67,7 +67,7 @@ function quantizeMedianCut(imageData: ImageData, options: QuantizeOptions): Quan
   const { data } = imageData;
   const alpha = new Uint8Array(data.length / 4);
   for (let i = 0; i < data.length; i += 4) {
-    alpha[i / 4] = data[i + 3];
+    alpha[i / 4] = data[i + 3]!;
   }
 
   const inPC = utils.PointContainer.fromImageData(imageData);
@@ -84,7 +84,7 @@ function quantizeMedianCut(imageData: ImageData, options: QuantizeOptions): Quan
 
   const quantized = pointContainerToImageData(outPC);
   for (let i = 0; i < alpha.length; i++) {
-    quantized.data[i * 4 + 3] = alpha[i];
+    quantized.data[i * 4 + 3] = alpha[i]!;
   }
 
   return { quantized, adaptivePalette: adaptiveColors };
@@ -132,7 +132,7 @@ export function quantize(
       return quantizeNeuQuant(imageData, options);
     case "wuquant":
       return quantizeWuQuant(imageData, options);
-    default:
+    case "median-cut":
       return quantizeMedianCut(imageData, options);
   }
 }
