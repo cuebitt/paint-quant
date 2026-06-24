@@ -14,7 +14,7 @@ export function ModeToggle() {
   return (
     <div className="flex items-center gap-1">
       <DropdownMenu>
-        <DropdownMenuTrigger nativeButton={false} render={<Button variant="outline" size="icon" />}>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
           <PaletteIcon className="h-[1.2rem] w-[1.2rem]" style={{ color: `var(--accent)` }} />
           <span className="sr-only">Accent color</span>
         </DropdownMenuTrigger>
@@ -32,7 +32,7 @@ export function ModeToggle() {
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger nativeButton={false} render={<Button variant="outline" size="icon" />}>
+        <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
           <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
           <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
           <span className="sr-only">Toggle theme</span>
