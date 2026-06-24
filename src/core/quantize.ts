@@ -6,7 +6,7 @@ import {
   type ImageQuantization,
   type PaletteQuantization,
 } from "image-q";
-import { FIXED_PALETTE, type RGB } from "@/palette";
+import { FIXED_PALETTE, type RGB } from "@/core/palette";
 
 export type QuantMethod = "median-cut" | "neuquant" | "wuquant";
 
@@ -20,18 +20,35 @@ interface QuantizeResult {
   adaptivePalette: readonly RGB[];
 }
 
-function pointContainerToImageData(pc: utils.PointContainer): ImageData {
-  const uint8 = pc.toUint8Array();
-  return new ImageData(
-    new Uint8ClampedArray(uint8.buffer as ArrayBuffer),
-    pc.getWidth(),
-    pc.getHeight(),
-  );
+const DITHER: ImageQuantization = "floyd-steinberg";
+const DISTANCE: ColorDistanceFormula = "cie94-graphic-arts";
+const MEDIAN_CUT: PaletteQuantization = "rgbquant";
+const NEUQUANT: PaletteQuantization = "neuquant";
+const WUQUANT: PaletteQuantization = "wuquant";
+
+export function quantize(
+  imageData: ImageData,
+  method: QuantMethod = "median-cut",
+  options: QuantizeOptions = { colors: 12, includeFixedPalette: true },
+): QuantizeResult {
+  switch (method) {
+    case "neuquant":
+      return quantizeNeuQuant(imageData, options);
+    case "wuquant":
+      return quantizeWuQuant(imageData, options);
+    case "median-cut":
+      return quantizeMedianCut(imageData, options);
+  }
 }
 
-function buildImageQPalette(colors: RGB[]): utils.Palette {
+function pointContainerToImageData(pc: utils.PointContainer): ImageData {
+  return new ImageData(new Uint8ClampedArray(pc.toUint8Array()), pc.getWidth(), pc.getHeight());
+}
+
+function buildCombinedPalette(adaptiveColors: RGB[], includeFixed: boolean): utils.Palette {
+  const combined = includeFixed ? [...FIXED_PALETTE, ...adaptiveColors] : adaptiveColors;
   const palette = new utils.Palette();
-  for (const [r, g, b] of colors) {
+  for (const [r, g, b] of combined) {
     palette.add(utils.Point.createByRGBA(r, g, b, 255));
   }
   palette.sort();
@@ -48,18 +65,10 @@ function extractAdaptiveColors(pc: utils.PointContainer, maxColors: number): RGB
   return colors;
 }
 
-function buildCombinedPalette(adaptiveColors: RGB[], includeFixed: boolean): utils.Palette {
-  const combined = includeFixed ? [...FIXED_PALETTE, ...adaptiveColors] : [...adaptiveColors];
-  return buildImageQPalette(combined);
-}
-
-function applyPalette(
-  inPC: utils.PointContainer,
-  combinedPalette: utils.Palette,
-): utils.PointContainer {
-  return applyPaletteSync(inPC, combinedPalette, {
-    imageQuantization: "floyd-steinberg" as ImageQuantization,
-    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
+function applyPalette(inPC: utils.PointContainer, palette: utils.Palette): utils.PointContainer {
+  return applyPaletteSync(inPC, palette, {
+    imageQuantization: DITHER,
+    colorDistanceFormula: DISTANCE,
   });
 }
 
@@ -71,11 +80,10 @@ function quantizeMedianCut(imageData: ImageData, options: QuantizeOptions): Quan
   }
 
   const inPC = utils.PointContainer.fromImageData(imageData);
-
   const adaptiveQ = buildPaletteSync([inPC], {
-    paletteQuantization: "rgbquant" as PaletteQuantization,
+    paletteQuantization: MEDIAN_CUT,
     colors: options.colors,
-    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
+    colorDistanceFormula: DISTANCE,
   });
 
   const adaptiveColors = extractAdaptiveColors(adaptiveQ.getPointContainer(), options.colors);
@@ -94,9 +102,9 @@ function quantizeNeuQuant(imageData: ImageData, options: QuantizeOptions): Quant
   const inPC = utils.PointContainer.fromImageData(imageData);
 
   const adaptiveQ = buildPaletteSync([inPC], {
-    paletteQuantization: "neuquant" as PaletteQuantization,
+    paletteQuantization: NEUQUANT,
     colors: options.colors,
-    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
+    colorDistanceFormula: DISTANCE,
   });
 
   const adaptiveColors = extractAdaptiveColors(adaptiveQ.getPointContainer(), options.colors);
@@ -110,9 +118,9 @@ function quantizeWuQuant(imageData: ImageData, options: QuantizeOptions): Quanti
   const inPC = utils.PointContainer.fromImageData(imageData);
 
   const fullQ = buildPaletteSync([inPC], {
-    paletteQuantization: "wuquant" as PaletteQuantization,
+    paletteQuantization: WUQUANT,
     colors: 256,
-    colorDistanceFormula: "cie94-graphic-arts" as ColorDistanceFormula,
+    colorDistanceFormula: DISTANCE,
   });
 
   const fullColors = extractAdaptiveColors(fullQ.getPointContainer(), options.colors);
@@ -120,19 +128,4 @@ function quantizeWuQuant(imageData: ImageData, options: QuantizeOptions): Quanti
   const outPC = applyPalette(inPC, combinedPalette);
 
   return { quantized: pointContainerToImageData(outPC), adaptivePalette: fullColors };
-}
-
-export function quantize(
-  imageData: ImageData,
-  method: QuantMethod = "median-cut",
-  options: QuantizeOptions = { colors: 12, includeFixedPalette: true },
-): QuantizeResult {
-  switch (method) {
-    case "neuquant":
-      return quantizeNeuQuant(imageData, options);
-    case "wuquant":
-      return quantizeWuQuant(imageData, options);
-    case "median-cut":
-      return quantizeMedianCut(imageData, options);
-  }
 }

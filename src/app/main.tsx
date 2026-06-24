@@ -1,6 +1,6 @@
 import { render } from "preact";
 import "./index.tailwind.css";
-import App from "@/App";
+import App from "@/app/App";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 

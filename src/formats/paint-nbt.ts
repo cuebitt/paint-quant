@@ -27,6 +27,8 @@ const CANVAS_TYPE_BY_SIZE: Record<string, number> = {
   "48x64": 9,
 };
 
+const SUPPORTED_SIZES = Object.keys(CANVAS_TYPE_BY_SIZE).join(", ");
+
 export interface PaintingData {
   canvasType: number;
   pixels: [number, number, number][];
@@ -41,7 +43,9 @@ export function getCanvasTypeIndex(canvas: CanvasType): number {
   const key = `${canvas.width}x${canvas.height}`;
   const idx = CANVAS_TYPE_BY_SIZE[key];
   if (idx === undefined) {
-    throw new Error(`Unsupported canvas dimensions: ${canvas.width}×${canvas.height}`);
+    throw new Error(
+      `Unsupported canvas dimensions: ${canvas.width}×${canvas.height}. Supported sizes are ${SUPPORTED_SIZES}.`,
+    );
   }
   return idx;
 }
@@ -78,10 +82,15 @@ export async function writePaintFile(data: PaintingData): Promise<Uint8Array> {
 
 export async function readPaintFile(data: ArrayBuffer | Uint8Array): Promise<PaintingData> {
   const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-  const result = await read(bytes, { rootName: true, endian: "big", compression: null });
+  const result = await read(bytes, {
+    rootName: true,
+    endian: "big",
+    compression: null,
+  });
   const root = result.data as CompoundTag;
 
   const ct = (root.ct as Int8).valueOf();
+  // nbtify stores the pixel array as an Int32Array of packed ARGB values.
   const pixels = root.pixels as unknown as Int32Array;
   const generation = (root.generation as Int32).valueOf();
   const v = (root.v as Int32).valueOf();

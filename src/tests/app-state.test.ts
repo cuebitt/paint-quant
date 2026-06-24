@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vite-plus/test";
-import { appReducer, initialState } from "@/app-state";
+import { appReducer, initialState } from "@/app/app-state";
 import { CANVAS_TYPES } from "@/types";
 
 describe("appReducer", () => {
@@ -67,7 +67,7 @@ describe("appReducer", () => {
     expect(state).toEqual(initialState);
   });
 
-  it("single-field actions set the correct field", () => {
+  it("toggles each field independently", () => {
     let state = appReducer(initialState, { type: "SET_LOADING", loading: true });
     expect(state.loading).toBe(true);
 

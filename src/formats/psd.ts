@@ -7,6 +7,8 @@ export interface PsdData {
 }
 
 initializeCanvas(
+  // ag-psd expects an HTMLCanvasElement factory, but this code runs in a worker
+  // where only OffscreenCanvas is available. The cast keeps the library happy.
   (width, height) => new OffscreenCanvas(width, height) as unknown as HTMLCanvasElement,
 );
 
@@ -50,21 +52,11 @@ export function readPsdFile(data: ArrayBuffer): PsdData {
   const { width, height } = psd;
 
   if (!width || !height) {
-    throw new Error("Invalid PSD dimensions");
+    throw new Error(`Invalid PSD dimensions: ${width ?? "undefined"}x${height ?? "undefined"}`);
   }
 
-  let imageData: ImageData;
-
-  if (psd.canvas) {
-    const ctx = psd.canvas.getContext("2d");
-    if (ctx) {
-      imageData = ctx.getImageData(0, 0, width, height);
-    } else {
-      imageData = compositeLayersManually(psd);
-    }
-  } else {
-    imageData = compositeLayersManually(psd);
-  }
+  const imageData =
+    psd.canvas?.getContext("2d")?.getImageData(0, 0, width, height) ?? compositeLayersManually(psd);
 
   return { width, height, imageData };
 }

@@ -1,20 +1,16 @@
 import { useEffect, useRef, useCallback } from "preact/hooks";
-import type { QuantMethod, QuantizeOptions } from "@/quantize";
-import type { CanvasType, ImageFitMode } from "@/types";
-import type { RGB } from "@/palette";
 import { AppHeader } from "@/components/AppHeader";
-import { UploadView } from "@/components/UploadView";
+import { UploadDropzone } from "@/components/UploadDropzone";
 import { ResultsToolbar } from "@/components/ResultsToolbar";
 import { ImageComparison } from "@/components/ImageComparison";
 import { PalettesSection } from "@/components/PalettesSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useImageProcessor } from "@/hooks/useImageProcessor";
+import { useImageProcessor, type ProcessImageFn } from "@/hooks/useImageProcessor";
 import { useAppCallbacks } from "@/hooks/useAppCallbacks";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
-import type { ResizeOptions } from "@/preprocess";
 
 function App() {
   const { state, dispatch, undo, redo } = useUndoRedo();
@@ -33,21 +29,12 @@ function App() {
     dispatch({ type: "SET_QUANTIZATION_ENABLED", enabled: !state.quantizationEnabled });
   }, [state.quantizationEnabled, dispatch]);
 
-  const processImage = useCallback(
-    async (
-      img: HTMLImageElement,
-      canvas: CanvasType,
-      method: QuantMethod,
-      mode: ImageFitMode,
-      padding: RGB,
-      quantEnabled: boolean,
-      quantOptions: QuantizeOptions,
-      resizeOptions: ResizeOptions,
-    ) => {
+  const processImage = useCallback<ProcessImageFn>(
+    async (img, canvas, method, mode, padding, quantEnabled, quantOptions, resizeOptions) => {
       try {
-        const workers = useImageProcessorRef.current;
+        const workers = workersRef.current;
         if (!workers?.workerRef.current) {
-          dispatch({ type: "SET_ERROR", error: "Worker not initialized" });
+          dispatch({ type: "SET_ERROR", error: "Image processor not ready" });
           return;
         }
 
@@ -92,8 +79,8 @@ function App() {
   );
 
   const workers = useImageProcessor(dispatch, processImage, stateRef);
-  const useImageProcessorRef = useRef(workers);
-  useImageProcessorRef.current = workers;
+  const workersRef = useRef(workers);
+  workersRef.current = workers;
 
   const { handleUpload, handleExportPaintFile, handleExportPng } = useAppCallbacks(
     dispatch,
@@ -112,22 +99,23 @@ function App() {
     "ctrl+shift+e": handleExportPaintFile,
     "ctrl+shift+p": handleExportPng,
     "ctrl+shift+c": async () => {
-      if (workers.quantizedDataRef.current) {
-        const { quantized } = workers.quantizedDataRef.current;
-        startTimer("copy-to-clipboard");
-        const canvas = new OffscreenCanvas(quantized.width, quantized.height);
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.putImageData(quantized, 0, 0);
-          try {
-            const blob = await canvas.convertToBlob({ type: "image/png" });
-            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-          } catch {
-            // Clipboard API not available
-          }
-        }
-        endTimer("copy-to-clipboard");
+      const result = workers.quantizedDataRef.current;
+      if (!result) return;
+
+      const { quantized } = result;
+      startTimer("copy-to-clipboard");
+      const canvas = new OffscreenCanvas(quantized.width, quantized.height);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.putImageData(quantized, 0, 0);
+      try {
+        const blob = await canvas.convertToBlob({ type: "image/png" });
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      } catch {
+        // clipboard unsupported or denied
       }
+      endTimer("copy-to-clipboard");
     },
   });
 
@@ -178,7 +166,13 @@ function App() {
           )}
 
           {!hasResults ? (
-            <UploadView onUpload={handleUpload} loading={state.loading} />
+            <div className="mx-auto max-w-2xl">
+              <UploadDropzone onUpload={handleUpload} loading={state.loading} />
+              <p className="mt-4 text-center text-sm text-muted-foreground">
+                Maximum file size: 10MB. Supported formats: PNG, JPG, WEBP, GIF, .paint, .ase,
+                .aseprite, .psd, .svg, .piskel, .pixil
+              </p>
+            </div>
           ) : (
             <div className="flex flex-col gap-8">
               <ResultsToolbar

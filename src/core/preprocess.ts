@@ -1,6 +1,6 @@
 import pica from "pica";
 import type { CanvasType, ImageFitMode } from "@/types";
-import type { RGB } from "@/palette";
+import type { RGB } from "@/core/palette";
 
 export const DEFAULT_PADDING_COLOR: RGB = [255, 255, 255];
 
@@ -52,7 +52,7 @@ export const preprocessImageForCanvas = async (
   if (resizeOptions.filter === "nearest") {
     const tempCanvas = document.createElement("canvas");
     const tempCtx = tempCanvas.getContext("2d");
-    if (!tempCtx) throw new Error("Failed to get 2D canvas context");
+    if (!tempCtx) throw new Error("Could not get 2D context for nearest-neighbor canvas");
     tempCanvas.width = canvasType.width;
     tempCanvas.height = canvasType.height;
 
@@ -68,7 +68,7 @@ export const preprocessImageForCanvas = async (
   sourceCanvas.width = image.width;
   sourceCanvas.height = image.height;
   const sourceCtx = sourceCanvas.getContext("2d");
-  if (!sourceCtx) throw new Error("Failed to get 2D canvas context");
+  if (!sourceCtx) throw new Error("Could not get 2D context for source canvas");
   sourceCtx.drawImage(image, 0, 0);
 
   const scaledCanvas = document.createElement("canvas");
@@ -86,7 +86,7 @@ export const preprocessImageForCanvas = async (
   finalCanvas.width = canvasType.width;
   finalCanvas.height = canvasType.height;
   const finalCtx = finalCanvas.getContext("2d");
-  if (!finalCtx) throw new Error("Failed to get 2D canvas context");
+  if (!finalCtx) throw new Error("Could not get 2D context for scaled output canvas");
 
   finalCtx.fillStyle = rgbString(paddingColor);
   finalCtx.fillRect(0, 0, canvasType.width, canvasType.height);
@@ -123,7 +123,7 @@ export const preprocessForDisplay = (
 
   const tempCanvas = document.createElement("canvas");
   const tempCtx = tempCanvas.getContext("2d");
-  if (!tempCtx) throw new Error("Failed to get 2D canvas context");
+  if (!tempCtx) throw new Error("Could not get 2D context for display canvas");
   tempCanvas.width = canvasWidth;
   tempCanvas.height = canvasHeight;
 

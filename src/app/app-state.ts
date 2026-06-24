@@ -1,8 +1,8 @@
-import type { QuantMethod } from "@/quantize";
+import type { QuantMethod } from "@/core/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
-import type { RGB } from "@/palette";
-import type { ResizeFilter } from "@/preprocess";
-import { DEFAULT_PADDING_COLOR } from "@/preprocess";
+import type { RGB } from "@/core/palette";
+import type { ResizeFilter } from "@/core/preprocess";
+import { DEFAULT_PADDING_COLOR } from "@/core/preprocess";
 import { CANVAS_TYPES } from "@/types";
 
 export interface AppState {

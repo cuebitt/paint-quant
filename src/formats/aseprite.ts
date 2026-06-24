@@ -19,7 +19,6 @@ interface RawLayerMeta {
   visible: boolean;
   opacity: number;
   blend: AsepriteLayerBlendMode;
-  celIndex: number[];
 }
 
 interface ProcessedLayer {
@@ -60,19 +59,18 @@ function parseLayerMetadata(buf: ArrayBuffer): RawLayerMeta[] {
 
   if (cursor >= totalSize) return [];
 
-  cursor += 4;
+  cursor += 4; // frame size
   const frameMagic = readLeU16(buf, cursor);
   cursor += 2;
   if (frameMagic !== 0xf1fa) return [];
 
   const chunkCount = readLeU16(buf, cursor);
   cursor += 2;
-  cursor += 2;
-  cursor += 2;
-  cursor += 4;
+  cursor += 2; // old chunk count
+  cursor += 2; // frame duration (ms)
+  cursor += 4; // reserved
 
   const layers: RawLayerMeta[] = [];
-  const layerCels: Map<number, number[]> = new Map();
 
   for (let c = 0; c < chunkCount; c++) {
     if (cursor + 6 > totalSize) break;
@@ -92,7 +90,7 @@ function parseLayerMetadata(buf: ArrayBuffer): RawLayerMeta[] {
       p += 2;
       const blend = readLeU16(buf, p);
       p += 2;
-      const opacity = new Uint8Array(buf)[p];
+      const opacity = new Uint8Array(buf)[p]!;
       p += 1;
       p += 3;
       const { value: name } = readStringAt(buf, p);
@@ -102,24 +100,12 @@ function parseLayerMetadata(buf: ArrayBuffer): RawLayerMeta[] {
         level,
         type: layerType,
         visible: !!(flags & 1),
-        opacity: opacity!,
+        opacity,
         blend: blend as AsepriteLayerBlendMode,
-        celIndex: [],
       });
-    } else if (chunkType === 0x2005) {
-      const p = cursor + 6;
-      const layerIndex = readLeU16(buf, p);
-      if (!layerCels.has(layerIndex)) {
-        layerCels.set(layerIndex, []);
-      }
-      layerCels.get(layerIndex)!.push(layerIndex);
     }
 
     cursor += chunkSize;
-  }
-
-  for (let i = 0; i < layers.length; i++) {
-    layers[i]!.celIndex = layerCels.has(i) ? [i] : [];
   }
 
   return layers;
@@ -451,6 +437,8 @@ function getPixelColor(
   depth: AsepriteColorDepth,
   palette: Record<number | string, { red: number; green: number; blue: number; alpha: number }>,
 ): [number, number, number, number] {
+  // @pixelation/aseprite exposes pixels as an opaque type, but in practice each
+  // pixel is stored as the raw bytes described by the file's color depth.
   if (depth === AsepriteColorDepth.Rgba) {
     const p = pixel as unknown as Uint8Array;
     return [p[0]!, p[1]!, p[2]!, p[3]!];
@@ -549,15 +537,6 @@ export function readAsepriteFile(data: ArrayBuffer | Uint8Array): AsepriteData {
   return readAsepriteFileFromBuffer(toBuffer(data));
 }
 
-export async function readAsepriteFileAsync(
-  data: File | Blob | ArrayBuffer | Uint8Array,
-): Promise<AsepriteData> {
-  if (data instanceof File || data instanceof Blob) {
-    return readAsepriteFileFromBuffer(await data.arrayBuffer());
-  }
-  return readAsepriteFileFromBuffer(toBuffer(data));
-}
-
 function readAsepriteFileFromBuffer(data: ArrayBuffer): AsepriteData {
   const sprite = new Aseprite(data);
   const { width, height, depth } = sprite.header;
@@ -581,27 +560,6 @@ function readAsepriteFileFromBuffer(data: ArrayBuffer): AsepriteData {
   imageData.data.set(pixelData);
 
   return { width, height, imageData };
-}
-
-export function asepriteToCanvas(data: ArrayBuffer | Uint8Array): HTMLCanvasElement {
-  const { width, height, imageData } = readAsepriteFile(data);
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to get canvas context");
-  ctx.putImageData(imageData, 0, 0);
-  return canvas;
-}
-
-export async function asepriteToPngBlob(data: ArrayBuffer | Uint8Array): Promise<Blob> {
-  const canvas = asepriteToCanvas(data);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error("Failed to create PNG blob"));
-    }, "image/png");
-  });
 }
 
 export function debugAsepriteFile(data: ArrayBuffer | Uint8Array): {

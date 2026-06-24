@@ -15,7 +15,22 @@ interface ParseSvgRequest {
   text: string;
 }
 
-type ParseRequest = ParseAsepriteRequest | ParsePsdRequest | ParseSvgRequest;
+interface ParsePiskelRequest {
+  type: "parsePiskel";
+  text: string;
+}
+
+interface ParsePixilRequest {
+  type: "parsePixil";
+  text: string;
+}
+
+type ParseRequest =
+  | ParseAsepriteRequest
+  | ParsePsdRequest
+  | ParseSvgRequest
+  | ParsePiskelRequest
+  | ParsePixilRequest;
 
 interface ParseResponse {
   type: "result";
@@ -56,10 +71,11 @@ async function parseSvg(svgText: string): Promise<ParseResponse> {
   };
 }
 
-async function parseAseprite(buffer: ArrayBuffer): Promise<ParseResponse> {
-  const { readAsepriteFile } = await import("@/aseprite");
-  const data = readAsepriteFile(buffer);
-
+async function parseImageDataFile(
+  buffer: ArrayBuffer,
+  parse: (data: ArrayBuffer) => { width: number; height: number; imageData: ImageData },
+): Promise<ParseResponse> {
+  const data = parse(buffer);
   const pngBlob = await imageDataToBlob(data.imageData);
   const arrayBuffer = await pngBlob.arrayBuffer();
 
@@ -71,18 +87,57 @@ async function parseAseprite(buffer: ArrayBuffer): Promise<ParseResponse> {
   };
 }
 
-async function parsePsd(buffer: ArrayBuffer): Promise<ParseResponse> {
-  const { readPsdFile } = await import("@/psd");
-  const data = readPsdFile(buffer);
+async function parseAseprite(buffer: ArrayBuffer): Promise<ParseResponse> {
+  const { readAsepriteFile } = await import("@/formats/aseprite");
+  return parseImageDataFile(buffer, readAsepriteFile);
+}
 
-  const pngBlob = await imageDataToBlob(data.imageData);
+async function parsePsd(buffer: ArrayBuffer): Promise<ParseResponse> {
+  const { readPsdFile } = await import("@/formats/psd");
+  return parseImageDataFile(buffer, readPsdFile);
+}
+
+async function canvasToPngBytes(
+  canvas: HTMLCanvasElement | OffscreenCanvas,
+): Promise<Uint8ClampedArray> {
+  if (typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas) {
+    const pngBlob = await canvas.convertToBlob({ type: "image/png" });
+    const arrayBuffer = await pngBlob.arrayBuffer();
+    return new Uint8ClampedArray(arrayBuffer);
+  }
+
+  const htmlCanvas = canvas as HTMLCanvasElement;
+  const pngBlob = await new Promise<Blob>((resolve, reject) => {
+    htmlCanvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Failed to create PNG blob"));
+    }, "image/png");
+  });
   const arrayBuffer = await pngBlob.arrayBuffer();
+  return new Uint8ClampedArray(arrayBuffer);
+}
+
+async function parsePiskel(text: string): Promise<ParseResponse> {
+  const { parsePiskel } = await import("@/formats/piskel");
+  const canvas = await parsePiskel(text);
 
   return {
     type: "result",
-    width: data.width,
-    height: data.height,
-    imageData: new Uint8ClampedArray(arrayBuffer),
+    width: canvas.width,
+    height: canvas.height,
+    imageData: await canvasToPngBytes(canvas),
+  };
+}
+
+async function parsePixil(text: string): Promise<ParseResponse> {
+  const { parsePixil } = await import("@/formats/pixil");
+  const canvas = await parsePixil(text);
+
+  return {
+    type: "result",
+    width: canvas.width,
+    height: canvas.height,
+    imageData: await canvasToPngBytes(canvas),
   };
 }
 
@@ -100,6 +155,12 @@ self.onmessage = async (e: MessageEvent<ParseRequest>) => {
         break;
       case "parseSvg":
         response = await parseSvg(msg.text);
+        break;
+      case "parsePiskel":
+        response = await parsePiskel(msg.text);
+        break;
+      case "parsePixil":
+        response = await parsePixil(msg.text);
         break;
       default:
         throw new Error(`Unknown message type: ${(msg as { type: string }).type}`);

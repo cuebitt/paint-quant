@@ -1,7 +1,7 @@
-import { quantize, type QuantMethod, type QuantizeOptions } from "@/quantize";
-import type { RGB } from "@/palette";
+import { quantize, type QuantMethod, type QuantizeOptions } from "@/core/quantize";
+import type { RGB } from "@/core/palette";
 import type { ImageFitMode } from "@/types";
-import type { ResizeFilter } from "@/preprocess";
+import type { ResizeFilter } from "@/core/preprocess";
 
 interface QuantizeRequest {
   type: "quantize";
