@@ -19,7 +19,7 @@ export default defineConfig({
   },
   fmt: {
     sortTailwindcss: {
-      stylesheet: "./src/index.tailwind.css",
+      stylesheet: "./src/app/index.tailwind.css",
       functions: ["clsx", "cn"],
       preserveWhitespace: true,
     },
@@ -51,5 +51,6 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     include: ["src/**/*.{test,spec}.ts"],
+    setupFiles: ["src/tests/setup.ts"],
   },
 });

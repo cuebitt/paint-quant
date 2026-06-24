@@ -36,6 +36,7 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.10.5",
     "@types/node": "^26.0.0",
+    "canvas": "^3.2.3",
     "happy-dom": "^20.10.6",
     "preact-devtools": "^0.0.1",
     "shadcn": "^4.11.0",
