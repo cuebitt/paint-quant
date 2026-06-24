@@ -66,20 +66,7 @@ async function parseAseprite(buffer: ArrayBuffer): Promise<ParseResponse> {
   const { readAsepriteFile } = await import("@/aseprite");
   const data = readAsepriteFile(buffer);
 
-  const imageData = new ImageData(
-    new Uint8ClampedArray(data.width * data.height * 4),
-    data.width,
-    data.height,
-  );
-  for (let i = 0; i < data.pixels.length; i++) {
-    const [r, g, b] = data.pixels[i];
-    imageData.data[i * 4] = r;
-    imageData.data[i * 4 + 1] = g;
-    imageData.data[i * 4 + 2] = b;
-    imageData.data[i * 4 + 3] = 255;
-  }
-
-  const pngBlob = await imageDataToPngBlob(imageData);
+  const pngBlob = await imageDataToPngBlob(data.imageData);
   const arrayBuffer = await pngBlob.arrayBuffer();
 
   return {
