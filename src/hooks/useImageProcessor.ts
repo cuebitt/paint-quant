@@ -1,36 +1,45 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { Dispatch } from "preact/hooks";
 import type { RefObject } from "preact";
-import type { QuantMethod, QuantizeOptions } from "@/quantize";
+import type { AppState, AppAction } from "@/app/app-state";
+import type { QuantMethod, QuantizeOptions } from "@/core/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
-import type { RGB } from "@/palette";
-import type { ResizeFilter, ResizeOptions } from "@/preprocess";
+import type { RGB } from "@/core/palette";
+import type { ResizeOptions } from "@/core/preprocess";
 import { imageDataToBlob } from "@/lib/utils";
 
+export interface ImageProcessorWorkers {
+  workerRef: RefObject<Worker | null>;
+  importWorkerRef: RefObject<Worker | null>;
+  originalImageRef: RefObject<HTMLImageElement | null>;
+  quantizedDataRef: RefObject<{
+    quantized: ImageData;
+    adaptivePalette: readonly RGB[];
+  } | null>;
+  pendingProcessRef: RefObject<{
+    displayDataUrl: string;
+    method: QuantMethod;
+    quantEnabled: boolean;
+    quantOptions: QuantizeOptions;
+  } | null>;
+}
+
+export type ProcessImageFn = (
+  img: HTMLImageElement,
+  canvas: CanvasType,
+  method: QuantMethod,
+  mode: ImageFitMode,
+  padding: RGB,
+  quantEnabled: boolean,
+  quantOptions: QuantizeOptions,
+  resizeOptions: ResizeOptions,
+) => Promise<void>;
+
 export function useImageProcessor(
-  dispatch: Dispatch<any>,
-  processImage: (
-    img: HTMLImageElement,
-    canvas: CanvasType,
-    method: QuantMethod,
-    mode: ImageFitMode,
-    padding: RGB,
-    quantEnabled: boolean,
-    quantOptions: QuantizeOptions,
-    resizeOptions: ResizeOptions,
-  ) => Promise<void>,
-  stateRef: RefObject<{
-    selectedCanvas: CanvasType;
-    quantMethod: QuantMethod;
-    fitMode: ImageFitMode;
-    paddingColor: RGB;
-    quantizationEnabled: boolean;
-    adaptiveColorCount: number;
-    includeFixedPalette: boolean;
-    resizeFilter: ResizeFilter;
-    unsharpAmount: number;
-  }>,
-) {
+  dispatch: Dispatch<AppAction>,
+  processImage: ProcessImageFn,
+  stateRef: RefObject<AppState>,
+): ImageProcessorWorkers {
   const workerRef = useRef<Worker | null>(null);
   const importWorkerRef = useRef<Worker | null>(null);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
@@ -52,12 +61,12 @@ export function useImageProcessor(
   const displayDataUrlRef = useRef<string>("");
 
   useEffect(() => {
-    const worker = new Worker(new URL("../quantize.worker.ts", import.meta.url), {
+    const worker = new Worker(new URL("../core/quantize.worker.ts", import.meta.url), {
       type: "module",
     });
     workerRef.current = worker;
 
-    const importWorker = new Worker(new URL("../import.worker.ts", import.meta.url), {
+    const importWorker = new Worker(new URL("../formats/import.worker.ts", import.meta.url), {
       type: "module",
     });
     importWorkerRef.current = importWorker;
@@ -99,7 +108,7 @@ export function useImageProcessor(
     };
 
     importWorker.onerror = () => {
-      dispatch({ type: "SET_ERROR", error: "Import worker error" });
+      dispatch({ type: "SET_ERROR", error: "Import worker failed" });
     };
 
     async function flushPendingResult() {
@@ -118,7 +127,7 @@ export function useImageProcessor(
       } catch (err) {
         dispatch({
           type: "SET_ERROR",
-          error: err instanceof Error ? err.message : "Failed to process result",
+          error: err instanceof Error ? err.message : "Failed to finalize image result",
         });
       }
       pendingResultRef.current = null;
@@ -211,7 +220,7 @@ export function useImageProcessor(
     };
 
     worker.onerror = () => {
-      dispatch({ type: "SET_ERROR", error: "Worker error" });
+      dispatch({ type: "SET_ERROR", error: "Image worker failed" });
     };
 
     return () => {

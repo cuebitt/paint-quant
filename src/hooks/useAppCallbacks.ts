@@ -1,13 +1,11 @@
 import { useCallback } from "preact/hooks";
 import type { Dispatch } from "preact/hooks";
 import type { RefObject } from "preact";
-import type { QuantMethod, QuantizeOptions } from "@/quantize";
-import type { CanvasType, ImageFitMode } from "@/types";
+import type { AppState, AppAction } from "@/app/app-state";
+import type { ProcessImageFn, ImageProcessorWorkers } from "@/hooks/useImageProcessor";
 import { CANVAS_TYPES } from "@/types";
-import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/paint-nbt";
-import type { PaintingData } from "@/paint-nbt";
-import type { RGB } from "@/palette";
-import type { ResizeFilter, ResizeOptions } from "@/preprocess";
+import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/formats/paint-nbt";
+import type { PaintingData } from "@/formats/paint-nbt";
 import { imageDataToBlob } from "@/lib/utils";
 
 const NBT_CT_TO_CANVAS_INDEX = [0, 3, 1, 2] as const;
@@ -27,48 +25,24 @@ function sanitizeForFilename(s: string): string {
     .slice(0, 48);
 }
 
+const IMPORT_HANDLERS: Record<
+  string,
+  { type: string; extract: (reader: FileReader) => Record<string, unknown>; text?: boolean }
+> = {
+  ".ase": { type: "parseAseprite", extract: (r) => ({ buffer: r.result }) },
+  ".aseprite": { type: "parseAseprite", extract: (r) => ({ buffer: r.result }) },
+  ".psd": { type: "parsePsd", extract: (r) => ({ buffer: r.result }) },
+  ".svg": { type: "parseSvg", extract: (r) => ({ text: r.result }), text: true },
+  ".piskel": { type: "parsePiskel", extract: (r) => ({ text: r.result }), text: true },
+  ".pixil": { type: "parsePixil", extract: (r) => ({ text: r.result }), text: true },
+};
+
 export function useAppCallbacks(
-  dispatch: Dispatch<any>,
-  state: {
-    selectedCanvas: CanvasType;
-    quantMethod: QuantMethod;
-    fitMode: ImageFitMode;
-    paddingColor: RGB;
-    quantizationEnabled: boolean;
-    adaptiveColorCount: number;
-    includeFixedPalette: boolean;
-    resizeFilter: ResizeFilter;
-    unsharpAmount: number;
-    title: string;
-    author: string;
-    signed: boolean;
-  },
-  stateRef: RefObject<any>,
-  processImage: (
-    img: HTMLImageElement,
-    canvas: CanvasType,
-    method: QuantMethod,
-    mode: ImageFitMode,
-    padding: RGB,
-    quantEnabled: boolean,
-    quantOptions: QuantizeOptions,
-    resizeOptions: ResizeOptions,
-  ) => Promise<void>,
-  workers: {
-    workerRef: RefObject<Worker | null>;
-    importWorkerRef: RefObject<Worker | null>;
-    originalImageRef: RefObject<HTMLImageElement | null>;
-    quantizedDataRef: RefObject<{
-      quantized: ImageData;
-      adaptivePalette: readonly RGB[];
-    } | null>;
-    pendingProcessRef: RefObject<{
-      displayDataUrl: string;
-      method: QuantMethod;
-      quantEnabled: boolean;
-      quantOptions: QuantizeOptions;
-    } | null>;
-  },
+  dispatch: Dispatch<AppAction>,
+  state: AppState,
+  stateRef: RefObject<AppState>,
+  processImage: ProcessImageFn,
+  workers: ImageProcessorWorkers,
 ) {
   const handleImportPaintFile = useCallback(
     (file: File) => {
@@ -115,20 +89,28 @@ export function useAppCallbacks(
         } catch (err) {
           dispatch({
             type: "SET_ERROR",
-            error: err instanceof Error ? err.message : "Failed to import .paint file",
+            error:
+              err instanceof Error
+                ? `Failed to import ${file.name}: ${err.message}`
+                : `Failed to import ${file.name}`,
           });
         }
       };
       reader.onerror = () => {
-        dispatch({ type: "SET_ERROR", error: "Failed to read file" });
+        dispatch({ type: "SET_ERROR", error: `Failed to read ${file.name}` });
       };
       reader.readAsArrayBuffer(file);
     },
     [dispatch, workers],
   );
 
-  const handleImportWorkerFile = useCallback(
-    (file: File, messageType: string, dataExtractor: (reader: FileReader) => any) => {
+  const readIntoImportWorker = useCallback(
+    (
+      file: File,
+      type: string,
+      extract: (reader: FileReader) => Record<string, unknown>,
+      asText = false,
+    ) => {
       dispatch({ type: "SET_LOADING", loading: true });
       const reader = new FileReader();
       reader.onload = () => {
@@ -136,15 +118,12 @@ export function useAppCallbacks(
           dispatch({ type: "SET_ERROR", error: "Import worker not initialized" });
           return;
         }
-        workers.importWorkerRef.current.postMessage({
-          type: messageType,
-          ...dataExtractor(reader),
-        });
+        workers.importWorkerRef.current.postMessage({ type, ...extract(reader) });
       };
       reader.onerror = () => {
-        dispatch({ type: "SET_ERROR", error: "Failed to read file" });
+        dispatch({ type: "SET_ERROR", error: `Failed to read ${file.name}` });
       };
-      if (messageType === "parseSvg") {
+      if (asText) {
         reader.readAsText(file);
       } else {
         reader.readAsArrayBuffer(file);
@@ -159,18 +138,13 @@ export function useAppCallbacks(
         handleImportPaintFile(file);
         return;
       }
-      if (file.name.endsWith(".ase") || file.name.endsWith(".aseprite")) {
-        handleImportWorkerFile(file, "parseAseprite", (r) => ({ buffer: r.result }));
-        return;
+      for (const [ext, handler] of Object.entries(IMPORT_HANDLERS)) {
+        if (file.name.endsWith(ext)) {
+          readIntoImportWorker(file, handler.type, handler.extract, handler.text);
+          return;
+        }
       }
-      if (file.name.endsWith(".psd")) {
-        handleImportWorkerFile(file, "parsePsd", (r) => ({ buffer: r.result }));
-        return;
-      }
-      if (file.name.endsWith(".svg")) {
-        handleImportWorkerFile(file, "parseSvg", (r) => ({ text: r.result }));
-        return;
-      }
+
       dispatch({ type: "SET_LOADING", loading: true });
       const reader = new FileReader();
       reader.onload = () => {
@@ -179,6 +153,7 @@ export function useAppCallbacks(
           workers.originalImageRef.current = img;
           dispatch({ type: "SET_ORIGINAL", url: reader.result as string });
           const s = stateRef.current;
+          if (!s) return;
           void processImage(
             img,
             s.selectedCanvas,
@@ -191,16 +166,16 @@ export function useAppCallbacks(
           );
         };
         img.onerror = () => {
-          dispatch({ type: "SET_ERROR", error: "Failed to load image" });
+          dispatch({ type: "SET_ERROR", error: `Failed to load ${file.name}` });
         };
         img.src = reader.result as string;
       };
       reader.onerror = () => {
-        dispatch({ type: "SET_ERROR", error: "Failed to read file" });
+        dispatch({ type: "SET_ERROR", error: `Failed to read ${file.name}` });
       };
       reader.readAsDataURL(file);
     },
-    [processImage, handleImportPaintFile, handleImportWorkerFile, workers, stateRef, dispatch],
+    [processImage, handleImportPaintFile, workers, stateRef, dispatch, readIntoImportWorker],
   );
 
   const handleExportPaintFile = useCallback(async () => {
@@ -227,22 +202,20 @@ export function useAppCallbacks(
       version: state.signed ? 2 : 99,
     });
 
-    let downloadName: string;
+    let filename: string;
     if (hasAuthorAndTitle) {
       const safeAuthor = sanitizeForFilename(state.author);
       const safeTitle = sanitizeForFilename(state.title);
-      downloadName = `${safeAuthor}_${safeTitle}.paint`;
+      filename = `${safeAuthor}_${safeTitle}.paint`;
     } else {
-      downloadName = `${generateShortId()}.paint`;
+      filename = `${generateShortId()}.paint`;
     }
 
-    const blob = new Blob([paintBuffer as BlobPart], {
-      type: "application/octet-stream",
-    });
+    const blob = new Blob([paintBuffer as BlobPart], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = downloadName;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

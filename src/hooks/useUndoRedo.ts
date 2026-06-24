@@ -1,6 +1,6 @@
 import { useReducer, useCallback, useRef } from "preact/hooks";
-import type { AppState, AppAction } from "@/app-state";
-import { appReducer, initialState } from "@/app-state";
+import type { AppState, AppAction } from "@/app/app-state";
+import { appReducer, initialState } from "@/app/app-state";
 
 interface UndoRedoState {
   past: AppState[];
@@ -77,7 +77,5 @@ export function useUndoRedo() {
     dispatch: dispatchApp,
     undo,
     redo,
-    canUndo: undoRedoState.past.length > 0,
-    canRedo: undoRedoState.future.length > 0,
   };
 }

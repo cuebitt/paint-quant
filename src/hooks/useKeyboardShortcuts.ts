@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 
-interface ShortcutMap {
-  [key: string]: () => void;
-}
+type ShortcutMap = Record<string, () => void>;
 
 export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
   const shortcutsRef = useRef(shortcuts);
@@ -10,12 +8,12 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const key = [];
-      if (e.ctrlKey || e.metaKey) key.push("ctrl");
-      if (e.shiftKey) key.push("shift");
-      if (e.altKey) key.push("alt");
-      key.push(e.key.toLowerCase());
-      const combo = key.join("+");
+      const parts = [];
+      if (e.ctrlKey || e.metaKey) parts.push("ctrl");
+      if (e.shiftKey) parts.push("shift");
+      if (e.altKey) parts.push("alt");
+      parts.push(e.key.toLowerCase());
+      const combo = parts.join("+");
 
       if (shortcutsRef.current[combo]) {
         e.preventDefault();

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "preact/hooks";
-import type { AppState } from "@/app-state";
+import type { AppState } from "@/app/app-state";
 
 const STORAGE_KEY = "paintcraft-preferences";
 
@@ -11,16 +11,19 @@ interface PersistedPreferences {
   lastUsed: number;
 }
 
-function savePreferences(state: AppState, theme: string): void {
-  const prefs: PersistedPreferences = {
-    quantMethod: state.quantMethod,
-    fitMode: state.fitMode,
-    resizeFilter: state.resizeFilter,
+function savePreferences(
+  prefs: Pick<AppState, "quantMethod" | "fitMode" | "resizeFilter">,
+  theme: string,
+) {
+  const data: PersistedPreferences = {
+    quantMethod: prefs.quantMethod,
+    fitMode: prefs.fitMode,
+    resizeFilter: prefs.resizeFilter,
     theme,
     lastUsed: Date.now(),
   };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     // Storage quota exceeded or unavailable
   }
@@ -31,12 +34,13 @@ export function useLocalStorage(state: AppState, theme: string) {
 
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    const { quantMethod, fitMode, resizeFilter } = state;
     timeoutRef.current = setTimeout(() => {
-      savePreferences(state, theme);
+      savePreferences({ quantMethod, fitMode, resizeFilter }, theme);
     }, 500);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [state, state.quantMethod, state.fitMode, state.resizeFilter, theme]);
+  }, [state.quantMethod, state.fitMode, state.resizeFilter, theme]);
 }
