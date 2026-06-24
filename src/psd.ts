@@ -15,7 +15,7 @@ function renderLayer(ctx: OffscreenCanvasRenderingContext2D, layer: Layer) {
 
   if (layer.children) {
     for (let i = layer.children.length - 1; i >= 0; i--) {
-      renderLayer(ctx, layer.children[i]);
+      renderLayer(ctx, layer.children[i]!);
     }
   }
 
@@ -34,7 +34,7 @@ function compositeLayersManually(psd: Psd): ImageData {
 
   if (psd.children) {
     for (let i = psd.children.length - 1; i >= 0; i--) {
-      renderLayer(ctx, psd.children[i]);
+      renderLayer(ctx, psd.children[i]!);
     }
   }
 

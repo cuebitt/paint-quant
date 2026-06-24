@@ -25,6 +25,12 @@
       "react/jsx-runtime": ["./node_modules/preact/jsx-runtime/src/index.d.ts"]
     },
 
+    /* Strict mode */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+    "forceConsistentCasingInFileNames": true,
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,

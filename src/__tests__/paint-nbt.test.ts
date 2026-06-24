@@ -27,43 +27,43 @@ function makePaintData(
 
 describe("getCanvasTypeIndex", () => {
   it("returns 0 for 16×16 (Small)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[0])).toBe(0);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[0]!)).toBe(0);
   });
 
   it("returns 2 for 32×16 (Long)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[1])).toBe(2);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[1]!)).toBe(2);
   });
 
   it("returns 3 for 16×32 (Tall)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[2])).toBe(3);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[2]!)).toBe(3);
   });
 
   it("returns 1 for 32×32 (Large)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[3])).toBe(1);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[3]!)).toBe(1);
   });
 
   it("returns 4 for 48×48 (Extra Large)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[4])).toBe(4);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[4]!)).toBe(4);
   });
 
   it("returns 5 for 64×64 (Extra Extra Large)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[5])).toBe(5);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[5]!)).toBe(5);
   });
 
   it("returns 6 for 48×32 (Extra Long)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[6])).toBe(6);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[6]!)).toBe(6);
   });
 
   it("returns 7 for 64×48 (Extra Extra Long)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[7])).toBe(7);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[7]!)).toBe(7);
   });
 
   it("returns 8 for 32×48 (Extra Tall)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[8])).toBe(8);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[8]!)).toBe(8);
   });
 
   it("returns 9 for 48×64 (Extra Extra Tall)", () => {
-    expect(getCanvasTypeIndex(CANVAS_TYPES[9])).toBe(9);
+    expect(getCanvasTypeIndex(CANVAS_TYPES[9]!)).toBe(9);
   });
 
   it("throws for unsupported canvas dimensions", () => {

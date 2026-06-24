@@ -37,7 +37,7 @@ type ThemeProviderState = {
 const initialState: ThemeProviderState = {
   theme: "system",
   setTheme: () => null,
-  accentColor: ACCENT_COLORS[0],
+  accentColor: ACCENT_COLORS[0]!,
   setAccentColor: () => null,
 };
 
@@ -56,9 +56,9 @@ export function ThemeProvider({
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => {
     const stored = localStorage.getItem(`${storageKey}-accent`);
     if (stored) {
-      return ACCENT_COLORS.find((c) => c.name === stored) || ACCENT_COLORS[0];
+      return ACCENT_COLORS.find((c) => c.name === stored) ?? ACCENT_COLORS[0]!;
     }
-    return ACCENT_COLORS[0];
+    return ACCENT_COLORS[0]!;
   });
 
   useEffect(() => {

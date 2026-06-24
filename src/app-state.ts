@@ -70,7 +70,7 @@ export const initialState: AppState = {
   adaptivePalette: [],
   loading: false,
   error: null,
-  selectedCanvas: CANVAS_TYPES[0],
+  selectedCanvas: CANVAS_TYPES[0]!,
   showGrid: false,
   quantMethod: "median-cut",
   fitMode: "contain",

@@ -9,9 +9,9 @@ function makeImageData(
 ): ImageData {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let i = 0; i < pixels.length; i++) {
-    data[i * 4] = pixels[i][0];
-    data[i * 4 + 1] = pixels[i][1];
-    data[i * 4 + 2] = pixels[i][2];
+    data[i * 4] = pixels[i]![0];
+    data[i * 4 + 1] = pixels[i]![1];
+    data[i * 4 + 2] = pixels[i]![2];
     data[i * 4 + 3] = 255;
   }
   return new ImageData(data, width, height);
