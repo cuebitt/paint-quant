@@ -4,15 +4,8 @@ import type { RefObject } from "preact";
 import type { QuantMethod, QuantizeOptions } from "@/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/palette";
-import type { ResizeOptions } from "@/preprocess";
-
-function imageDataToBlob(imageData: ImageData): Promise<Blob> {
-  const canvas = new OffscreenCanvas(imageData.width, imageData.height);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to get canvas context");
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.convertToBlob({ type: "image/png" });
-}
+import type { ResizeFilter, ResizeOptions } from "@/preprocess";
+import { imageDataToBlob } from "@/lib/utils";
 
 export function useImageProcessor(
   dispatch: Dispatch<any>,
@@ -34,7 +27,7 @@ export function useImageProcessor(
     quantizationEnabled: boolean;
     adaptiveColorCount: number;
     includeFixedPalette: boolean;
-    resizeFilter: any;
+    resizeFilter: ResizeFilter;
     unsharpAmount: number;
   }>,
 ) {

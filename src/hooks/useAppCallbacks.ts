@@ -7,7 +7,8 @@ import { CANVAS_TYPES } from "@/types";
 import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/paint-nbt";
 import type { PaintingData } from "@/paint-nbt";
 import type { RGB } from "@/palette";
-import type { ResizeOptions } from "@/preprocess";
+import type { ResizeFilter, ResizeOptions } from "@/preprocess";
+import { imageDataToBlob } from "@/lib/utils";
 
 const NBT_CT_TO_CANVAS_INDEX = [0, 3, 1, 2] as const;
 
@@ -26,14 +27,6 @@ function sanitizeForFilename(s: string): string {
     .slice(0, 48);
 }
 
-function imageDataToBlob(imageData: ImageData): Promise<Blob> {
-  const canvas = new OffscreenCanvas(imageData.width, imageData.height);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to get canvas context");
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.convertToBlob({ type: "image/png" });
-}
-
 export function useAppCallbacks(
   dispatch: Dispatch<any>,
   state: {
@@ -44,7 +37,7 @@ export function useAppCallbacks(
     quantizationEnabled: boolean;
     adaptiveColorCount: number;
     includeFixedPalette: boolean;
-    resizeFilter: any;
+    resizeFilter: ResizeFilter;
     unsharpAmount: number;
     title: string;
     author: string;
@@ -89,11 +82,11 @@ export function useAppCallbacks(
           if (canvasTypeIndex === undefined) {
             throw new Error(`Unknown canvas type: ${painting.canvasType}`);
           }
-          const canvasType = CANVAS_TYPES[canvasTypeIndex];
+          const canvasType = CANVAS_TYPES[canvasTypeIndex]!;
 
           const data = new Uint8ClampedArray(canvasType.width * canvasType.height * 4);
           for (let i = 0; i < painting.pixels.length; i++) {
-            const [r, g, b] = painting.pixels[i];
+            const [r, g, b] = painting.pixels[i]!;
             data[i * 4] = r;
             data[i * 4 + 1] = g;
             data[i * 4 + 2] = b;
@@ -216,7 +209,7 @@ export function useAppCallbacks(
     const { quantized } = workers.quantizedDataRef.current;
     const pixels: [number, number, number][] = [];
     for (let i = 0; i < quantized.data.length; i += 4) {
-      pixels.push([quantized.data[i], quantized.data[i + 1], quantized.data[i + 2]]);
+      pixels.push([quantized.data[i]!, quantized.data[i + 1]!, quantized.data[i + 2]!]);
     }
 
     const timestamp = Date.now().toString(36);

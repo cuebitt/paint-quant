@@ -1,3 +1,5 @@
+import { imageDataToBlob } from "@/lib/utils";
+
 interface ParseAsepriteRequest {
   type: "parseAseprite";
   buffer: ArrayBuffer;
@@ -27,14 +29,6 @@ interface ErrorResponse {
   message: string;
 }
 
-async function imageDataToPngBlob(imageData: ImageData): Promise<Blob> {
-  const canvas = new OffscreenCanvas(imageData.width, imageData.height);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to get canvas context");
-  ctx.putImageData(imageData, 0, 0);
-  return canvas.convertToBlob({ type: "image/png" });
-}
-
 async function parseSvg(svgText: string): Promise<ParseResponse> {
   const blob = new Blob([svgText], { type: "image/svg+xml" });
   const bitmap = await createImageBitmap(blob);
@@ -51,7 +45,7 @@ async function parseSvg(svgText: string): Promise<ParseResponse> {
   bitmap.close();
   const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
 
-  const pngBlob = await imageDataToPngBlob(imageData);
+  const pngBlob = await imageDataToBlob(imageData);
   const arrayBuffer = await pngBlob.arrayBuffer();
 
   return {
@@ -66,7 +60,7 @@ async function parseAseprite(buffer: ArrayBuffer): Promise<ParseResponse> {
   const { readAsepriteFile } = await import("@/aseprite");
   const data = readAsepriteFile(buffer);
 
-  const pngBlob = await imageDataToPngBlob(data.imageData);
+  const pngBlob = await imageDataToBlob(data.imageData);
   const arrayBuffer = await pngBlob.arrayBuffer();
 
   return {
@@ -81,7 +75,7 @@ async function parsePsd(buffer: ArrayBuffer): Promise<ParseResponse> {
   const { readPsdFile } = await import("@/psd");
   const data = readPsdFile(buffer);
 
-  const pngBlob = await imageDataToPngBlob(data.imageData);
+  const pngBlob = await imageDataToBlob(data.imageData);
   const arrayBuffer = await pngBlob.arrayBuffer();
 
   return {
