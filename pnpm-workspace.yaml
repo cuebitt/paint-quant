@@ -3,7 +3,6 @@ catalog:
   vite-plus: ^0.2.1
   vitest: 4.1.9
 minimumReleaseAge: 1440
-trustPolicy: no-downgrade
 overrides:
   vite: "catalog:"
   vitest: "catalog:"

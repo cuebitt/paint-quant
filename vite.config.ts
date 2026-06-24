@@ -1,4 +1,4 @@
-import { defineConfig } from "vite-plus";
+import { defineConfig, lazyPlugins } from "vite-plus";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -36,11 +36,11 @@ export default defineConfig({
     },
     ignorePatterns: ["dist"],
   },
-  plugins: [preact(), tailwindcss()],
+  plugins: lazyPlugins(() => [preact(), tailwindcss()]),
   build: {
     rollupOptions: {
       output: {
-        manualChunks(id) {
+        manualChunks(id: string | string[]) {
           if (id.includes("node_modules/preact/compat")) return "preact-compat";
         },
       },
