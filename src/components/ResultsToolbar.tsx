@@ -88,13 +88,13 @@ export function ResultsToolbar({
           onChange={onCanvasChange}
           disabled={loading}
         />
-        <Separator orientation="vertical" className="h-5" />
+        <Separator orientation="vertical" />
         <PaddingColorPicker
           selectedColor={paddingColorPreview}
           onPreview={onPaddingPreview}
           onCommit={onPaddingCommit}
         />
-        <Separator orientation="vertical" className="h-5" />
+        <Separator orientation="vertical" />
         <div className="flex items-center gap-2">
           <Switch id="grid-toggle" checked={showGrid} onCheckedChange={onToggleGrid} />
           <Label htmlFor="grid-toggle" className="flex items-center gap-1.5 text-sm">

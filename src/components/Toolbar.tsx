@@ -102,43 +102,46 @@ export function Toolbar({
         disabled={disabled}
       />
       {resizeFilter !== "nearest" && (
-        <Tooltip disabled={sharpenLocal === 0}>
-          <TooltipTrigger render={<div className="flex items-center gap-2" />}>
-            <Switch
-              id="sharpen-toggle"
-              checked={sharpenLocal > 0}
-              onCheckedChange={(checked) => {
-                handleSharpenChange(checked ? 150 : 0);
-              }}
-              disabled={disabled}
-            />
-            <Label htmlFor="sharpen-toggle" className="text-sm whitespace-nowrap">
-              Sharpen
-            </Label>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={8} className="!block w-56 p-3">
-            <div className="flex items-center gap-2">
-              <Slider
-                min={10}
-                max={300}
-                step={10}
-                value={[sharpenLocal]}
-                onValueChange={(v) => {
-                  const val = Array.isArray(v) ? v[0] : v;
-                  handleSharpenChange(val);
+        <>
+          <Separator orientation="vertical" />
+          <Tooltip disabled={sharpenLocal === 0}>
+            <TooltipTrigger render={<div className="flex items-center gap-2" />}>
+              <Switch
+                id="sharpen-toggle"
+                checked={sharpenLocal > 0}
+                onCheckedChange={(checked) => {
+                  handleSharpenChange(checked ? 150 : 0);
                 }}
                 disabled={disabled}
-                className="flex-1"
               />
-              <span className="w-8 text-right text-xs text-background">{sharpenLocal}</span>
-            </div>
-          </TooltipContent>
-        </Tooltip>
+              <Label htmlFor="sharpen-toggle" className="text-sm whitespace-nowrap">
+                Sharpen
+              </Label>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8} className="!block w-56 p-3">
+              <div className="flex items-center gap-2">
+                <Slider
+                  min={10}
+                  max={300}
+                  step={10}
+                  value={[sharpenLocal]}
+                  onValueChange={(v) => {
+                    const val = Array.isArray(v) ? v[0] : v;
+                    handleSharpenChange(val);
+                  }}
+                  disabled={disabled}
+                  className="flex-1"
+                />
+                <span className="w-8 text-right text-xs text-background">{sharpenLocal}</span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </>
       )}
-      <Separator orientation="vertical" className="h-5" />
+      <Separator orientation="vertical" />
       <FitModeSelector selectedMode={fitMode} onChange={onFitModeChange} disabled={disabled} />
 
-      <Separator orientation="vertical" className="h-5" />
+      <Separator orientation="vertical" />
 
       <div className="flex items-center gap-2">
         <Switch
@@ -154,7 +157,7 @@ export function Toolbar({
           {signed ? "Signed (Non-editable)" : "Unsigned (Editable)"}
         </Label>
       </div>
-      <Separator orientation="vertical" className="h-5" />
+      <Separator orientation="vertical" />
       <div className="flex items-center gap-2">
         <Switch
           id="quantization-toggle"
