@@ -40,7 +40,7 @@ Supports PNG, JPEG, WEBP, GIF, PSD, Aseprite, Pixil, Piskel, and SVG. Can also r
 
 ## What it does not
 
-`paintcraft` does not include any painting/pixel editing features. Use [Pixil](http://pixilart.com), [Piskel](http://piskelapp.com), or [PhotoPea](http://photopea.com).
+`paintcraft` does not include any painting/pixel editing features. Use [Pixil](http://pixilart.com), [Piskel](http://piskelapp.com), [PhotoPea](http://photopea.com), or [Aseprite](https://www.aseprite.org).
 
 ## Getting started
 
