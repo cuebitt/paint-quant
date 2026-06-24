@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useRef, useCallback } from "preact/hooks";
+import { useEffect, useRef, useCallback } from "preact/hooks";
 import type { QuantMethod, QuantizeOptions } from "@/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/palette";
@@ -8,15 +8,30 @@ import { ResultsToolbar } from "@/components/ResultsToolbar";
 import { ImageComparison } from "@/components/ImageComparison";
 import { PalettesSection } from "@/components/PalettesSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { appReducer, initialState } from "@/app-state";
 import { useImageProcessor } from "@/hooks/useImageProcessor";
 import { useAppCallbacks } from "@/hooks/useAppCallbacks";
+import { useUndoRedo } from "@/hooks/useUndoRedo";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import type { ResizeOptions } from "@/preprocess";
 
 function App() {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  const { state, dispatch, undo, redo } = useUndoRedo();
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  useLocalStorage(state, "dark");
+
+  const { startTimer, endTimer } = usePerformanceMonitor();
+
+  const toggleGrid = useCallback(() => {
+    dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid });
+  }, [state.showGrid, dispatch]);
+
+  const toggleQuantize = useCallback(() => {
+    dispatch({ type: "SET_QUANTIZATION_ENABLED", enabled: !state.quantizationEnabled });
+  }, [state.quantizationEnabled, dispatch]);
 
   const processImage = useCallback(
     async (
@@ -69,9 +84,11 @@ function App() {
           type: "SET_ERROR",
           error: err instanceof Error ? err.message : "Failed to process image",
         });
+      } finally {
+        endTimer("process-image");
       }
     },
-    [],
+    [endTimer, dispatch],
   );
 
   const workers = useImageProcessor(dispatch, processImage, stateRef);
@@ -86,10 +103,39 @@ function App() {
     workers,
   );
 
+  useKeyboardShortcuts({
+    "ctrl+z": undo,
+    "ctrl+shift+z": redo,
+    "ctrl+y": redo,
+    g: toggleGrid,
+    q: toggleQuantize,
+    "ctrl+shift+e": handleExportPaintFile,
+    "ctrl+shift+p": handleExportPng,
+    "ctrl+shift+c": async () => {
+      if (workers.quantizedDataRef.current) {
+        const { quantized } = workers.quantizedDataRef.current;
+        startTimer("copy-to-clipboard");
+        const canvas = new OffscreenCanvas(quantized.width, quantized.height);
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.putImageData(quantized, 0, 0);
+          try {
+            const blob = await canvas.convertToBlob({ type: "image/png" });
+            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+          } catch {
+            // Clipboard API not available
+          }
+        }
+        endTimer("copy-to-clipboard");
+      }
+    },
+  });
+
   useEffect(() => {
     if (workers.originalImageRef.current && stateRef.current.originalUrl) {
       dispatch({ type: "SET_LOADING", loading: true });
       const s = stateRef.current;
+      startTimer("process-image");
       void processImage(
         workers.originalImageRef.current,
         s.selectedCanvas,
@@ -111,8 +157,10 @@ function App() {
     state.includeFixedPalette,
     state.resizeFilter,
     state.unsharpAmount,
+    dispatch,
     processImage,
     workers.originalImageRef,
+    startTimer,
   ]);
 
   const hasResults = state.originalUrl && state.preprocessedUrl && state.quantizedUrl;
