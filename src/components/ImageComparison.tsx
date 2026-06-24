@@ -25,7 +25,13 @@ export function ImageComparison({
 
   return (
     <div className="flex w-full flex-col gap-6 lg:flex-row">
-      <ImageDisplay imageUrl={originalUrl} title="Original" className="flex-1" />
+      <ImageDisplay
+        imageUrl={originalUrl}
+        title="Original"
+        cellsX={cellsX}
+        cellsY={cellsY}
+        className="flex-1"
+      />
       <ImageDisplay
         imageUrl={quantizedUrl}
         title={quantizedTitle}

@@ -29,11 +29,14 @@ export function ImageDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="relative overflow-hidden rounded-xl border-2 border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
+        <div
+          className="relative overflow-hidden rounded-xl border-2 border-border bg-muted/50 transition-[border-radius] hover:rounded-none"
+          style={{ aspectRatio: `${cellsX} / ${cellsY}` }}
+        >
           <img
             src={imageUrl}
             alt={`${title} preview`}
-            className="image-rendering-pixelated h-auto w-full"
+            className="image-rendering-pixelated h-full w-full object-contain"
           />
           {showGrid && (
             <div

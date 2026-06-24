@@ -215,7 +215,7 @@ function App() {
                 onReset={() => dispatch({ type: "RESET" })}
               />
               <ImageComparison
-                originalUrl={state.preprocessedUrl}
+                originalUrl={state.originalUrl}
                 quantizedUrl={state.quantizedUrl}
                 showGrid={state.showGrid}
                 cellsX={state.selectedCanvas.cellsX}
