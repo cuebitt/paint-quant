@@ -33,26 +33,19 @@ export function UploadDropzone({
     e.stopPropagation();
     setIsDragActive(false);
 
-    if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
-      onUpload(e.dataTransfer.files[0]);
-    }
+    const file = e.dataTransfer?.files[0];
+    if (file) onUpload(file);
   };
 
   const handleFileChange = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    if (target.files && target.files[0]) {
-      onUpload(target.files[0]);
-    }
-  };
-
-  const openFileDialog = () => {
-    fileInputRef.current?.click();
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) onUpload(file);
   };
 
   const handleKeyDown = (e: TargetedKeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      openFileDialog();
+      fileInputRef.current?.click();
     }
   };
 
@@ -67,7 +60,7 @@ export function UploadDropzone({
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
-      onClick={openFileDialog}
+      onClick={() => fileInputRef.current?.click()}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
@@ -76,7 +69,7 @@ export function UploadDropzone({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.paint,.ase,.aseprite,.psd,.svg"
+        accept="image/*,.paint,.ase,.aseprite,.psd,.svg,.piskel,.pixil"
         onChange={handleFileChange}
         className="pointer-events-none absolute inset-0 cursor-pointer opacity-0"
         disabled={disabled || loading}
@@ -102,11 +95,13 @@ export function UploadDropzone({
 
       <CardContent className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2">
-          {["PNG", "JPG", "WEBP", "GIF", "PAINT", "ASE", "PSD", "SVG"].map((ext) => (
-            <span key={ext} className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
-              {ext}
-            </span>
-          ))}
+          {["PNG", "JPG", "WEBP", "GIF", "PAINT", "ASE", "PSD", "SVG", "PISKEL", "PIXIL"].map(
+            (ext) => (
+              <span key={ext} className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
+                {ext}
+              </span>
+            ),
+          )}
         </div>
 
         {loading && (

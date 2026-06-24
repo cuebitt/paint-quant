@@ -1,9 +1,9 @@
 import { PaintBucketIcon, ImageIcon, UploadIcon, Grid3x3Icon } from "lucide-react";
 import type { CanvasType } from "@/types";
-import type { QuantMethod } from "@/quantize";
+import type { QuantMethod } from "@/core/quantize";
 import type { ImageFitMode } from "@/types";
-import type { ResizeFilter } from "@/preprocess";
-import type { RGB } from "@/palette";
+import type { ResizeFilter } from "@/core/preprocess";
+import type { RGB } from "@/core/palette";
 import { CanvasSelector } from "@/components/CanvasSelector";
 import { PaddingColorPicker } from "@/components/PaddingColorPicker";
 import { Toolbar } from "@/components/Toolbar";
@@ -119,7 +119,7 @@ export function ResultsToolbar({
                   </Button>
                 </span>
               }
-            ></TooltipTrigger>
+            />
             <TooltipContent>Title and author are required for signed paintings</TooltipContent>
           </Tooltip>
           <Button variant="secondary" onClick={onExportPng} disabled={loading}>
@@ -133,8 +133,6 @@ export function ResultsToolbar({
         </div>
       </div>
       <Toolbar
-        showGrid={showGrid}
-        onToggleGrid={onToggleGrid}
         quantMethod={quantMethod}
         onQuantMethodChange={onQuantMethodChange}
         fitMode={fitMode}

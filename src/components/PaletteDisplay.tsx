@@ -1,4 +1,4 @@
-import { rgbToHex, type RGB } from "@/palette";
+import { rgbToHex, type RGB } from "@/core/palette";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwatchBookIcon } from "lucide-react";
 
@@ -18,18 +18,19 @@ export function PaletteDisplay({ title, colors }: PaletteDisplayProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-6 gap-2">
-          {colors.map((color) => (
-            <div key={rgbToHex(color)} className="flex flex-col items-center gap-1">
-              <div
-                className="size-8 rounded-md border border-border shadow-sm"
-                style={{ backgroundColor: rgbToHex(color) }}
-                title={rgbToHex(color)}
-              />
-              <span className="text-[10px] leading-none text-muted-foreground">
-                {rgbToHex(color)}
-              </span>
-            </div>
-          ))}
+          {colors.map((color) => {
+            const hex = rgbToHex(color);
+            return (
+              <div key={hex} className="flex flex-col items-center gap-1">
+                <div
+                  className="size-8 rounded-md border border-border shadow-sm"
+                  style={{ backgroundColor: hex }}
+                  title={hex}
+                />
+                <span className="text-[10px] leading-none text-muted-foreground">{hex}</span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
-import type { RGB } from "@/palette";
-import { FIXED_PALETTE } from "@/palette";
+import type { RGB } from "@/core/palette";
+import { FIXED_PALETTE } from "@/core/palette";
 import { PaletteDisplay } from "@/components/PaletteDisplay";
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";

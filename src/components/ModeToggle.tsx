@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTheme, ACCENT_COLORS, type AccentColor } from "@/components/ThemeProvider";
+import { useTheme, ACCENT_COLORS } from "@/components/ThemeProvider";
 
 export function ModeToggle() {
   const { setTheme, setAccentColor } = useTheme();
@@ -19,7 +19,7 @@ export function ModeToggle() {
           <span className="sr-only">Accent color</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {ACCENT_COLORS.map((color: AccentColor) => (
+          {ACCENT_COLORS.map((color) => (
             <DropdownMenuItem key={color.name} onClick={() => setAccentColor(color)}>
               <span
                 className="mr-2 inline-block size-3 rounded-full"

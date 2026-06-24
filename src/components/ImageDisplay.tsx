@@ -32,7 +32,7 @@ export function ImageDisplay({
         <div className="relative overflow-hidden rounded-xl border-2 border-border bg-muted/50 transition-[border-radius] hover:rounded-none">
           <img
             src={imageUrl}
-            alt={`${title} - quantized preview`}
+            alt={`${title} preview`}
             className="image-rendering-pixelated h-auto w-full"
           />
           {showGrid && (
