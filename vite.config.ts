@@ -27,6 +27,8 @@ export default defineConfig({
   lint: {
     options: { typeAware: true, typeCheck: true },
     plugins: ["oxc", "typescript", "unicorn", "react"],
+    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
+    rules: { "vite-plus/prefer-vite-plus-imports": "error" },
     categories: {
       correctness: "warn",
     },
