@@ -54,6 +54,8 @@ function App() {
           resizeOptions,
         );
 
+        workers.preprocessedDataRef.current = preprocessedData;
+
         const displayBitmap = await createImageBitmap(img);
         workers.workerRef.current.postMessage({
           type: "display",
@@ -229,6 +231,10 @@ function App() {
                 onAuthorChange={(author) => dispatch({ type: "SET_AUTHOR", author })}
                 signed={state.signed}
                 onSignedChange={(signed) => dispatch({ type: "SET_SIGNED", signed })}
+                embedOriginalImage={state.embedOriginalImage}
+                onEmbedOriginalImageChange={(embed) =>
+                  dispatch({ type: "SET_EMBED_ORIGINAL_IMAGE", embed })
+                }
                 loading={state.loading}
                 onExportPaint={handleExportPaintFile}
                 onExportPng={handleExportPng}

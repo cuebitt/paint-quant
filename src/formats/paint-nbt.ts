@@ -37,6 +37,7 @@ export interface PaintingData {
   title: string;
   generation: number;
   version: number;
+  originalImage?: Uint8Array;
 }
 
 export function getCanvasTypeIndex(canvas: CanvasType): number {
@@ -77,6 +78,10 @@ export async function writePaintFile(data: PaintingData): Promise<Uint8Array> {
     fields.title = data.title;
   }
 
+  if (data.originalImage) {
+    fields.img = data.originalImage;
+  }
+
   return write(fields, { rootName: "", endian: "big", compression: null });
 }
 
@@ -103,6 +108,8 @@ export async function readPaintFile(data: ArrayBuffer | Uint8Array): Promise<Pai
     title = root.title as string;
   }
 
+  const img = root.img as Int8Array | Uint8Array | undefined;
+
   const rgbPixels: [number, number, number][] = Array.from(pixels, (argb: number) => [
     (argb >> 16) & 0xff,
     (argb >> 8) & 0xff,
@@ -117,5 +124,6 @@ export async function readPaintFile(data: ArrayBuffer | Uint8Array): Promise<Pai
     title,
     generation,
     version: v,
+    ...(img ? { originalImage: img instanceof Uint8Array ? img : new Uint8Array(img) } : {}),
   };
 }

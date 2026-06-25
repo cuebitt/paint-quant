@@ -125,4 +125,18 @@ describe("readPaintFile", () => {
     expect(result.generation).toBe(1);
     expect(result.version).toBe(2);
   });
+
+  it("round-trips original image bytes", async () => {
+    const fakeImage = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x00, 0x01, 0x02, 0x03]);
+    const data = makePaintData(0, 256, { originalImage: fakeImage });
+    const result = await readPaintFile(await writePaintFile(data));
+    expect(result.originalImage).toBeInstanceOf(Uint8Array);
+    expect(result.originalImage).toEqual(fakeImage);
+  });
+
+  it("omits original image when not provided", async () => {
+    const data = makePaintData(0, 256);
+    const result = await readPaintFile(await writePaintFile(data));
+    expect(result.originalImage).toBeUndefined();
+  });
 });

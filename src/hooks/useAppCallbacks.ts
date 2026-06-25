@@ -73,9 +73,28 @@ export function useAppCallbacks(
             adaptivePalette: [],
           };
           workers.originalImageRef.current = null;
+          workers.preprocessedDataRef.current = null;
 
-          const blob = await imageDataToBlob(imageData);
-          const dataUrl = URL.createObjectURL(blob);
+          let originalUrl: string;
+          if (painting.originalImage) {
+            const blob = new Blob([new Uint8Array(painting.originalImage).buffer as BlobPart], {
+              type: "image/webp",
+            });
+            originalUrl = URL.createObjectURL(blob);
+            const img = new Image();
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject(new Error("Failed to load embedded original image"));
+              img.src = originalUrl;
+            });
+            workers.originalImageRef.current = img;
+          } else {
+            const blob = await imageDataToBlob(imageData);
+            originalUrl = URL.createObjectURL(blob);
+          }
+
+          const quantizedBlob = await imageDataToBlob(imageData);
+          const quantizedUrl = URL.createObjectURL(quantizedBlob);
 
           dispatch({
             type: "IMPORT_PAINT",
@@ -83,8 +102,8 @@ export function useAppCallbacks(
             title: painting.title,
             author: painting.author,
             signed: painting.generation === 1 && painting.version === 2,
-            preprocessed: dataUrl,
-            processed: dataUrl,
+            preprocessed: originalUrl,
+            processed: quantizedUrl,
           });
         } catch (err) {
           dispatch({
@@ -187,6 +206,24 @@ export function useAppCallbacks(
       pixels.push([quantized.data[i]!, quantized.data[i + 1]!, quantized.data[i + 2]!]);
     }
 
+    let originalImage: Uint8Array | undefined;
+    if (state.embedOriginalImage) {
+      const preprocessedData = workers.preprocessedDataRef.current;
+      if (preprocessedData) {
+        try {
+          const canvas = new OffscreenCanvas(preprocessedData.width, preprocessedData.height);
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.putImageData(preprocessedData, 0, 0);
+            const blob = await canvas.convertToBlob({ type: "image/webp" });
+            originalImage = new Uint8Array(await blob.arrayBuffer());
+          }
+        } catch {
+          // WebP encoding not supported, skip original image
+        }
+      }
+    }
+
     const timestamp = Date.now().toString(36);
     const name = `${crypto.randomUUID()}_${timestamp}`;
     const canvasTypeIndex = getCanvasTypeIndex(state.selectedCanvas);
@@ -200,6 +237,7 @@ export function useAppCallbacks(
       title: hasAuthorAndTitle ? state.title : "",
       generation: state.signed ? 1 : 0,
       version: state.signed ? 2 : 99,
+      originalImage,
     });
 
     let filename: string;
@@ -220,7 +258,14 @@ export function useAppCallbacks(
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [state.selectedCanvas, state.title, state.author, state.signed, workers]);
+  }, [
+    state.selectedCanvas,
+    state.title,
+    state.author,
+    state.signed,
+    state.embedOriginalImage,
+    workers,
+  ]);
 
   const handleExportPng = useCallback(() => {
     if (!workers.quantizedDataRef.current) return;

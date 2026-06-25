@@ -35,6 +35,8 @@ interface ToolbarProps {
   onAuthorChange: (author: string) => void;
   signed: boolean;
   onSignedChange: (signed: boolean) => void;
+  embedOriginalImage: boolean;
+  onEmbedOriginalImageChange: (embed: boolean) => void;
 }
 
 export function Toolbar({
@@ -59,6 +61,8 @@ export function Toolbar({
   onAuthorChange,
   signed,
   onSignedChange,
+  embedOriginalImage,
+  onEmbedOriginalImageChange,
 }: ToolbarProps) {
   const [pendingColorCount, setPendingColorCount] = useState<number | null>(null);
   const [pendingSharpen, setPendingSharpen] = useState<number | null>(null);
@@ -245,6 +249,18 @@ export function Toolbar({
           </div>
         </div>
       )}
+      <Separator orientation="vertical" />
+      <div className="flex items-center gap-2">
+        <Switch
+          id="embed-original-image"
+          checked={embedOriginalImage}
+          onCheckedChange={onEmbedOriginalImageChange}
+          disabled={disabled}
+        />
+        <Label htmlFor="embed-original-image" className="text-sm whitespace-nowrap">
+          Embed original
+        </Label>
+      </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ export interface ImageProcessorWorkers {
   workerRef: RefObject<Worker | null>;
   importWorkerRef: RefObject<Worker | null>;
   originalImageRef: RefObject<HTMLImageElement | null>;
+  preprocessedDataRef: RefObject<ImageData | null>;
   quantizedDataRef: RefObject<{
     quantized: ImageData;
     adaptivePalette: readonly RGB[];
@@ -49,6 +50,7 @@ export function useImageProcessor(
   const workerRef = useRef<Worker | null>(null);
   const importWorkerRef = useRef<Worker | null>(null);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
+  const preprocessedDataRef = useRef<ImageData | null>(null);
   const quantizedDataRef = useRef<{
     quantized: ImageData;
     adaptivePalette: readonly RGB[];
@@ -205,6 +207,7 @@ export function useImageProcessor(
     workerRef,
     importWorkerRef,
     originalImageRef,
+    preprocessedDataRef,
     quantizedDataRef,
     pendingProcessRef,
     pendingResultRef,

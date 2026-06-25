@@ -26,6 +26,7 @@ export interface AppState {
   title: string;
   author: string;
   signed: boolean;
+  embedOriginalImage: boolean;
 }
 
 export type AppAction =
@@ -61,6 +62,7 @@ export type AppAction =
   | { type: "SET_TITLE"; title: string }
   | { type: "SET_AUTHOR"; author: string }
   | { type: "SET_SIGNED"; signed: boolean }
+  | { type: "SET_EMBED_ORIGINAL_IMAGE"; embed: boolean }
   | { type: "RESET" };
 
 export const initialState: AppState = {
@@ -84,6 +86,7 @@ export const initialState: AppState = {
   title: "",
   author: "",
   signed: false,
+  embedOriginalImage: true,
 };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -142,6 +145,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, author: action.author };
     case "SET_SIGNED":
       return { ...state, signed: action.signed };
+    case "SET_EMBED_ORIGINAL_IMAGE":
+      return { ...state, embedOriginalImage: action.embed };
     case "RESET":
       return initialState;
   }

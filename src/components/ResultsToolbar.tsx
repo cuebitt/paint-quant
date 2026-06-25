@@ -41,6 +41,8 @@ interface ResultsToolbarProps {
   onAuthorChange: (author: string) => void;
   signed: boolean;
   onSignedChange: (signed: boolean) => void;
+  embedOriginalImage: boolean;
+  onEmbedOriginalImageChange: (embed: boolean) => void;
   loading: boolean;
   onExportPaint: () => void;
   onExportPng: () => void;
@@ -75,6 +77,8 @@ export function ResultsToolbar({
   onAuthorChange,
   signed,
   onSignedChange,
+  embedOriginalImage,
+  onEmbedOriginalImageChange,
   loading,
   onExportPaint,
   onExportPng,
@@ -154,6 +158,8 @@ export function ResultsToolbar({
         onAuthorChange={onAuthorChange}
         signed={signed}
         onSignedChange={onSignedChange}
+        embedOriginalImage={embedOriginalImage}
+        onEmbedOriginalImageChange={onEmbedOriginalImageChange}
       />
     </div>
   );
