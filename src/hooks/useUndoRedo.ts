@@ -1,6 +1,7 @@
 import { useReducer, useCallback, useRef } from "preact/hooks";
 import type { AppState, AppAction } from "@/app/app-state";
 import { appReducer, initialState } from "@/app/app-state";
+import { loadPreferences } from "@/hooks/useLocalStorage";
 
 interface UndoRedoState {
   past: AppState[];
@@ -50,10 +51,13 @@ function undoRedoReducer(state: UndoRedoState, action: UndoRedoAction): UndoRedo
   }
 }
 
+const restoredPreferences = loadPreferences();
+const restoredInitialState: AppState = { ...initialState, ...restoredPreferences };
+
 export function useUndoRedo() {
   const [undoRedoState, dispatch] = useReducer(undoRedoReducer, {
     past: [],
-    present: initialState,
+    present: restoredInitialState,
     future: [],
   });
 

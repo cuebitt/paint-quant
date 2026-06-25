@@ -22,6 +22,12 @@ export interface ImageProcessorWorkers {
     quantEnabled: boolean;
     quantOptions: QuantizeOptions;
   } | null>;
+  pendingResultRef: RefObject<{
+    type: "preprocessed" | "quantized";
+    processedData: ImageData;
+    adaptivePalette?: readonly RGB[];
+  } | null>;
+  flushPendingResult: () => void;
 }
 
 export type ProcessImageFn = (
@@ -59,6 +65,7 @@ export function useImageProcessor(
     adaptivePalette?: readonly RGB[];
   } | null>(null);
   const displayDataUrlRef = useRef<string>("");
+  const flushPendingResultRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const worker = new Worker(new URL("../core/quantize.worker.ts", import.meta.url), {
@@ -134,6 +141,8 @@ export function useImageProcessor(
       pendingProcessRef.current = null;
     }
 
+    flushPendingResultRef.current = flushPendingResult;
+
     worker.onmessage = (e: MessageEvent) => {
       const msg = e.data;
       if (msg.type === "error") {
@@ -154,47 +163,6 @@ export function useImageProcessor(
           }
           void flushPendingResult();
         });
-        return;
-      }
-
-      if (msg.type === "preprocessed") {
-        const processedData = new ImageData(
-          new Uint8ClampedArray(msg.imageData.data),
-          msg.imageData.width,
-          msg.imageData.height,
-        );
-
-        const pending = pendingProcessRef.current;
-        if (!pending) return;
-
-        if (!pending.quantEnabled) {
-          quantizedDataRef.current = {
-            quantized: processedData,
-            adaptivePalette: [],
-          };
-
-          pendingResultRef.current = {
-            type: "preprocessed",
-            processedData,
-          };
-          void flushPendingResult();
-          return;
-        }
-
-        const buf = processedData.data.buffer.slice(0);
-        workerRef.current?.postMessage(
-          {
-            type: "quantize",
-            imageData: {
-              data: new Uint8ClampedArray(buf),
-              width: processedData.width,
-              height: processedData.height,
-            },
-            method: pending.method,
-            options: pending.quantOptions,
-          },
-          [buf],
-        );
         return;
       }
 
@@ -231,5 +199,15 @@ export function useImageProcessor(
     };
   }, [processImage, stateRef, dispatch]);
 
-  return { workerRef, importWorkerRef, originalImageRef, quantizedDataRef, pendingProcessRef };
+  const flushPendingResult = () => flushPendingResultRef.current?.();
+
+  return {
+    workerRef,
+    importWorkerRef,
+    originalImageRef,
+    quantizedDataRef,
+    pendingProcessRef,
+    pendingResultRef,
+    flushPendingResult,
+  };
 }

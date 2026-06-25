@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { AppState } from "@/app/app-state";
+import type { QuantMethod } from "@/core/quantize";
+import type { ImageFitMode } from "@/types";
+import type { ResizeFilter } from "@/core/preprocess";
 
 const STORAGE_KEY = "paintcraft-preferences";
 
@@ -26,6 +29,21 @@ function savePreferences(
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     // Storage quota exceeded or unavailable
+  }
+}
+
+export function loadPreferences(): Partial<AppState> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const data = JSON.parse(raw) as PersistedPreferences;
+    const result: Partial<AppState> = {};
+    if (data.quantMethod) result.quantMethod = data.quantMethod as QuantMethod;
+    if (data.fitMode) result.fitMode = data.fitMode as ImageFitMode;
+    if (data.resizeFilter) result.resizeFilter = data.resizeFilter as ResizeFilter;
+    return result;
+  } catch {
+    return {};
   }
 }
 

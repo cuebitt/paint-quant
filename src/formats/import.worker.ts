@@ -52,21 +52,22 @@ async function parseSvg(svgText: string): Promise<ParseResponse> {
     throw new Error("SVG must have explicit width and height attributes");
   }
 
-  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const { width, height } = bitmap;
+  const canvas = new OffscreenCanvas(width, height);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Failed to get canvas context");
 
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
-  const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+  const imageData = ctx.getImageData(0, 0, width, height);
 
   const pngBlob = await imageDataToBlob(imageData);
   const arrayBuffer = await pngBlob.arrayBuffer();
 
   return {
     type: "result",
-    width: bitmap.width,
-    height: bitmap.height,
+    width,
+    height,
     imageData: new Uint8ClampedArray(arrayBuffer),
   };
 }

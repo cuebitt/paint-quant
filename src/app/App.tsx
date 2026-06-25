@@ -11,6 +11,7 @@ import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
+import { preprocessImageForCanvas } from "@/core/preprocess";
 
 function App() {
   const { state, dispatch, undo, redo } = useUndoRedo();
@@ -45,17 +46,13 @@ function App() {
           quantOptions,
         };
 
-        const preprocessBitmap = await createImageBitmap(img);
-        workers.workerRef.current.postMessage({
-          type: "preprocess",
-          imageBitmap: preprocessBitmap,
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height,
-          fitMode: mode,
-          paddingColor: padding,
-          resizeFilter: resizeOptions.filter,
-          unsharpAmount: resizeOptions.unsharpAmount,
-        });
+        const preprocessedData = await preprocessImageForCanvas(
+          img,
+          canvas,
+          mode,
+          padding,
+          resizeOptions,
+        );
 
         const displayBitmap = await createImageBitmap(img);
         workers.workerRef.current.postMessage({
@@ -66,6 +63,29 @@ function App() {
           fitMode: mode,
           paddingColor: padding,
         });
+
+        if (quantEnabled) {
+          workers.workerRef.current.postMessage({
+            type: "quantize",
+            imageData: {
+              data: new Uint8ClampedArray(preprocessedData.data),
+              width: preprocessedData.width,
+              height: preprocessedData.height,
+            },
+            method,
+            options: quantOptions,
+          });
+        } else {
+          workers.quantizedDataRef.current = {
+            quantized: preprocessedData,
+            adaptivePalette: [],
+          };
+          workers.pendingResultRef.current = {
+            type: "preprocessed",
+            processedData: preprocessedData,
+          };
+          workers.flushPendingResult();
+        }
       } catch (err) {
         dispatch({
           type: "SET_ERROR",
