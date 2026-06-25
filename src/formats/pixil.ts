@@ -1,13 +1,13 @@
 import { createCanvas, getContext2D, loadImage } from "@/formats/canvas";
 
-export interface PixilLayerOptions {
+interface PixilLayerOptions {
   blend: string;
   alpha_lock: boolean;
   locked: boolean;
   filter: Record<string, unknown>;
 }
 
-export interface PixilLayer {
+interface PixilLayer {
   id: number;
   src: string;
   name: string;
@@ -18,7 +18,7 @@ export interface PixilLayer {
   options?: PixilLayerOptions;
 }
 
-export interface PixilFrame {
+interface PixilFrame {
   name: string;
   speed: number;
   layers: PixilLayer[];
@@ -60,10 +60,10 @@ export async function parsePixil(json: string): Promise<HTMLCanvasElement | Offs
   const canvas = createCanvas(width, height);
   const ctx = getContext2D(canvas);
 
-  for (const layer of firstFrame.layers) {
-    const img = await loadImage(layer.src);
-    ctx.globalAlpha = layer.opacity;
-    ctx.drawImage(img, 0, 0);
+  const images = await Promise.all(firstFrame.layers.map((layer) => loadImage(layer.src)));
+  for (let i = 0; i < firstFrame.layers.length; i++) {
+    ctx.globalAlpha = firstFrame.layers[i]!.opacity;
+    ctx.drawImage(images[i]!, 0, 0);
   }
   ctx.globalAlpha = 1;
 

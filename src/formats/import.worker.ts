@@ -1,4 +1,5 @@
 import { imageDataToBlob } from "@/lib/utils";
+import type { ErrorResponse } from "@/core/image-utils";
 
 interface ParseAsepriteRequest {
   type: "parseAseprite";
@@ -37,11 +38,6 @@ interface ParseResponse {
   width: number;
   height: number;
   imageData: Uint8ClampedArray;
-}
-
-interface ErrorResponse {
-  type: "error";
-  message: string;
 }
 
 async function parseSvg(svgText: string): Promise<ParseResponse> {

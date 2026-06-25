@@ -7,6 +7,7 @@ import { CANVAS_TYPES } from "@/types";
 import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/formats/paint-nbt";
 import type { PaintingData } from "@/formats/paint-nbt";
 import { imageDataToBlob } from "@/lib/utils";
+import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
 
 const NBT_CT_TO_CANVAS_INDEX = [0, 3, 1, 2] as const;
 
@@ -96,6 +97,9 @@ export function useAppCallbacks(
           const quantizedBlob = await imageDataToBlob(imageData);
           const quantizedUrl = URL.createObjectURL(quantizedBlob);
 
+          const prevOriginal = stateRef.current?.originalUrl;
+          const prevQuantized = stateRef.current?.quantizedUrl;
+
           dispatch({
             type: "IMPORT_PAINT",
             canvas: canvasType,
@@ -105,22 +109,23 @@ export function useAppCallbacks(
             preprocessed: originalUrl,
             processed: quantizedUrl,
           });
+
+          if (prevOriginal) URL.revokeObjectURL(prevOriginal);
+          if (prevQuantized) URL.revokeObjectURL(prevQuantized);
         } catch (err) {
-          dispatch({
-            type: "SET_ERROR",
-            error:
-              err instanceof Error
-                ? `Failed to import ${file.name}: ${err.message}`
-                : `Failed to import ${file.name}`,
-          });
+          dispatchError(dispatch, err, `Failed to import ${file.name}`);
         }
       };
       reader.onerror = () => {
-        dispatch({ type: "SET_ERROR", error: `Failed to read ${file.name}` });
+        dispatchError(
+          dispatch,
+          new Error(`Failed to read ${file.name}`),
+          `Failed to read ${file.name}`,
+        );
       };
       reader.readAsArrayBuffer(file);
     },
-    [dispatch, workers],
+    [dispatch, workers, stateRef],
   );
 
   const readIntoImportWorker = useCallback(
@@ -134,13 +139,21 @@ export function useAppCallbacks(
       const reader = new FileReader();
       reader.onload = () => {
         if (!workers.importWorkerRef.current) {
-          dispatch({ type: "SET_ERROR", error: "Import worker not initialized" });
+          dispatchError(
+            dispatch,
+            new Error("Import worker not initialized"),
+            "Import worker not initialized",
+          );
           return;
         }
         workers.importWorkerRef.current.postMessage({ type, ...extract(reader) });
       };
       reader.onerror = () => {
-        dispatch({ type: "SET_ERROR", error: `Failed to read ${file.name}` });
+        dispatchError(
+          dispatch,
+          new Error(`Failed to read ${file.name}`),
+          `Failed to read ${file.name}`,
+        );
       };
       if (asText) {
         reader.readAsText(file);
@@ -173,24 +186,23 @@ export function useAppCallbacks(
           dispatch({ type: "SET_ORIGINAL", url: reader.result as string });
           const s = stateRef.current;
           if (!s) return;
-          void processImage(
-            img,
-            s.selectedCanvas,
-            s.quantMethod,
-            s.fitMode,
-            s.paddingColor,
-            s.quantizationEnabled,
-            { colors: s.adaptiveColorCount, includeFixedPalette: s.includeFixedPalette },
-            { filter: s.resizeFilter, unsharpAmount: s.unsharpAmount },
-          );
+          void processImage(img, ...getProcessImageArgs(s));
         };
         img.onerror = () => {
-          dispatch({ type: "SET_ERROR", error: `Failed to load ${file.name}` });
+          dispatchError(
+            dispatch,
+            new Error(`Failed to load ${file.name}`),
+            `Failed to load ${file.name}`,
+          );
         };
         img.src = reader.result as string;
       };
       reader.onerror = () => {
-        dispatch({ type: "SET_ERROR", error: `Failed to read ${file.name}` });
+        dispatchError(
+          dispatch,
+          new Error(`Failed to read ${file.name}`),
+          `Failed to read ${file.name}`,
+        );
       };
       reader.readAsDataURL(file);
     },
@@ -279,7 +291,10 @@ export function useAppCallbacks(
     ctx.putImageData(quantized, 0, 0);
 
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) {
+        dispatch({ type: "SET_ERROR", error: "Failed to export PNG" });
+        return;
+      }
       const timestamp = Date.now().toString(36);
       const name = `${crypto.randomUUID()}_${timestamp}`;
       const url = URL.createObjectURL(blob);
@@ -291,7 +306,7 @@ export function useAppCallbacks(
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }, "image/png");
-  }, [workers]);
+  }, [workers, dispatch]);
 
   return { handleUpload, handleExportPaintFile, handleExportPng };
 }

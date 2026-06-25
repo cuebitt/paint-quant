@@ -1,4 +1,4 @@
-export type CanvasImageSource = HTMLImageElement | ImageBitmap;
+type CanvasImageSource = HTMLImageElement | ImageBitmap;
 
 export function loadImage(dataUri: string): Promise<CanvasImageSource> {
   if (typeof document !== "undefined") {

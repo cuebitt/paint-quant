@@ -1,6 +1,6 @@
 import { readPsd, initializeCanvas, type Psd, type Layer } from "ag-psd";
 
-export interface PsdData {
+interface PsdData {
   width: number;
   height: number;
   imageData: ImageData;

@@ -7,6 +7,7 @@ import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/core/palette";
 import type { ResizeOptions } from "@/core/preprocess";
 import { imageDataToBlob } from "@/lib/utils";
+import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
 
 export interface ImageProcessorWorkers {
   workerRef: RefObject<Worker | null>;
@@ -94,19 +95,12 @@ export function useImageProcessor(
         const img = new Image();
         img.onload = () => {
           originalImageRef.current = img;
+          const prevUrl = stateRef.current?.originalUrl;
+          if (prevUrl) URL.revokeObjectURL(prevUrl);
           dispatch({ type: "SET_ORIGINAL", url: dataUrl });
           const s = stateRef.current;
           if (!s) return;
-          void processImage(
-            img,
-            s.selectedCanvas,
-            s.quantMethod,
-            s.fitMode,
-            s.paddingColor,
-            s.quantizationEnabled,
-            { colors: s.adaptiveColorCount, includeFixedPalette: s.includeFixedPalette },
-            { filter: s.resizeFilter, unsharpAmount: s.unsharpAmount },
-          );
+          void processImage(img, ...getProcessImageArgs(s));
         };
         img.onerror = () => {
           URL.revokeObjectURL(dataUrl);
@@ -117,7 +111,7 @@ export function useImageProcessor(
     };
 
     importWorker.onerror = () => {
-      dispatch({ type: "SET_ERROR", error: "Import worker failed" });
+      dispatchError(dispatch, new Error("Import worker failed"), "Import worker failed");
     };
 
     async function flushPendingResult() {
@@ -127,6 +121,8 @@ export function useImageProcessor(
 
       try {
         const blob = await imageDataToBlob(pendingResult.processedData);
+        const prevProcessedUrl = stateRef.current?.quantizedUrl;
+        if (prevProcessedUrl) URL.revokeObjectURL(prevProcessedUrl);
         dispatch({
           type: "SET_RESULT",
           preprocessed: displayDataUrl,
@@ -134,10 +130,7 @@ export function useImageProcessor(
           adaptive: pendingResult.adaptivePalette ?? [],
         });
       } catch (err) {
-        dispatch({
-          type: "SET_ERROR",
-          error: err instanceof Error ? err.message : "Failed to finalize image result",
-        });
+        dispatchError(dispatch, err, "Failed to finalize image result");
       }
       pendingResultRef.current = null;
       pendingProcessRef.current = null;
@@ -159,6 +152,7 @@ export function useImageProcessor(
           msg.imageData.height,
         );
         void imageDataToBlob(displayImageData).then((blob) => {
+          if (displayDataUrlRef.current) URL.revokeObjectURL(displayDataUrlRef.current);
           displayDataUrlRef.current = URL.createObjectURL(blob);
           if (pendingProcessRef.current) {
             pendingProcessRef.current.displayDataUrl = displayDataUrlRef.current;
@@ -190,7 +184,7 @@ export function useImageProcessor(
     };
 
     worker.onerror = () => {
-      dispatch({ type: "SET_ERROR", error: "Image worker failed" });
+      dispatchError(dispatch, new Error("Image worker failed"), "Image worker failed");
     };
 
     return () => {

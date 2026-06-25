@@ -2,6 +2,12 @@ import { useEffect, useRef } from "preact/hooks";
 
 type ShortcutMap = Record<string, () => void>;
 
+const isInputElement = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+};
+
 export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
   const shortcutsRef = useRef(shortcuts);
   shortcutsRef.current = shortcuts;
@@ -16,6 +22,8 @@ export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
       const combo = parts.join("+");
 
       if (shortcutsRef.current[combo]) {
+        const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
+        if (!hasModifier && isInputElement(e.target)) return;
         e.preventDefault();
         shortcutsRef.current[combo]();
       }

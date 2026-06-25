@@ -1,4 +1,5 @@
-import { PaintBucketIcon, ImageIcon, UploadIcon, Grid3x3Icon } from "lucide-react";
+import { memo } from "preact/compat";
+import { PaintBucketIcon, ImageIcon, UploadIcon } from "lucide-react";
 import type { CanvasType } from "@/types";
 import type { QuantMethod } from "@/core/quantize";
 import type { ImageFitMode } from "@/types";
@@ -7,11 +8,11 @@ import type { RGB } from "@/core/palette";
 import { CanvasSelector } from "@/components/CanvasSelector";
 import { PaddingColorPicker } from "@/components/PaddingColorPicker";
 import { Toolbar } from "@/components/Toolbar";
+import { ToggleField } from "@/components/ToggleField";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Grid3x3Icon as Grid3x3IconInline } from "lucide-react";
 
 interface ResultsToolbarProps {
   selectedCanvas: CanvasType;
@@ -49,7 +50,7 @@ interface ResultsToolbarProps {
   onReset: () => void;
 }
 
-export function ResultsToolbar({
+export const ResultsToolbar = memo(function ResultsToolbar({
   selectedCanvas,
   onCanvasChange,
   paddingColorPreview,
@@ -99,13 +100,17 @@ export function ResultsToolbar({
           onCommit={onPaddingCommit}
         />
         <Separator orientation="vertical" />
-        <div className="flex items-center gap-2">
-          <Switch id="grid-toggle" checked={showGrid} onCheckedChange={onToggleGrid} />
-          <Label htmlFor="grid-toggle" className="flex items-center gap-1.5 text-sm">
-            <Grid3x3Icon className="size-3.5 text-muted-foreground" />
-            Grid
-          </Label>
-        </div>
+        <ToggleField
+          id="grid-toggle"
+          checked={showGrid}
+          onCheckedChange={onToggleGrid}
+          label={
+            <span className="flex items-center gap-1.5">
+              <Grid3x3IconInline className="size-3.5 text-muted-foreground" />
+              Grid
+            </span>
+          }
+        />
 
         <div className="ml-auto flex items-center gap-2">
           <Tooltip disabled={!signed || (author !== "" && title !== "")}>
@@ -163,4 +168,4 @@ export function ResultsToolbar({
       />
     </div>
   );
-}
+});

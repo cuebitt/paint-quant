@@ -1,5 +1,5 @@
 import { PaintbrushIcon } from "lucide-react";
-import { rgbToHex, type RGB } from "@/core/palette";
+import { rgbToHex, hexToRgb, type RGB } from "@/core/palette";
 import { PopoverPicker } from "@/components/PopoverPicker";
 
 interface PaddingColorPickerProps {
@@ -7,13 +7,6 @@ interface PaddingColorPickerProps {
   onPreview: (color: RGB) => void;
   onCommit: (color: RGB) => void;
 }
-
-const hexToRgb = (hex: string): RGB => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return [r, g, b];
-};
 
 export function PaddingColorPicker({
   selectedColor,

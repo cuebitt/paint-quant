@@ -1,11 +1,11 @@
 import { createCanvas, getContext2D, loadImage } from "@/formats/canvas";
 
-export interface PiskelChunk {
+interface PiskelChunk {
   layout: number[][];
   base64PNG: string;
 }
 
-export interface PiskelLayer {
+interface PiskelLayer {
   name: string;
   opacity: number;
   frameCount: number;
@@ -13,7 +13,7 @@ export interface PiskelLayer {
   base64PNG?: string;
 }
 
-export interface PiskelContent {
+interface PiskelContent {
   name: string;
   description: string;
   fps: number;
@@ -85,10 +85,12 @@ export async function parsePiskel(json: string): Promise<HTMLCanvasElement | Off
   const canvas = createCanvas(width, height);
   const ctx = getContext2D(canvas);
 
-  for (const layer of layers) {
-    const frameCanvas = await extractFirstFrame(layer, width, height, modelVersion);
-    ctx.globalAlpha = layer.opacity;
-    ctx.drawImage(frameCanvas, 0, 0);
+  const frameCanvases = await Promise.all(
+    layers.map((layer) => extractFirstFrame(layer, width, height, modelVersion)),
+  );
+  for (let i = 0; i < layers.length; i++) {
+    ctx.globalAlpha = layers[i]!.opacity;
+    ctx.drawImage(frameCanvases[i]!, 0, 0);
   }
   ctx.globalAlpha = 1;
 

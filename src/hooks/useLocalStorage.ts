@@ -32,15 +32,29 @@ function savePreferences(
   }
 }
 
+const VALID_QUANT_METHODS = new Set<string>(["median-cut", "neuquant", "wuquant"]);
+const VALID_FIT_MODES = new Set<string>(["contain", "fill", "width", "height"]);
+const VALID_RESIZE_FILTERS = new Set<string>([
+  "nearest",
+  "box",
+  "hamming",
+  "lanczos2",
+  "lanczos3",
+  "mks2013",
+]);
+
 export function loadPreferences(): Partial<AppState> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const data = JSON.parse(raw) as PersistedPreferences;
     const result: Partial<AppState> = {};
-    if (data.quantMethod) result.quantMethod = data.quantMethod as QuantMethod;
-    if (data.fitMode) result.fitMode = data.fitMode as ImageFitMode;
-    if (data.resizeFilter) result.resizeFilter = data.resizeFilter as ResizeFilter;
+    if (data.quantMethod && VALID_QUANT_METHODS.has(data.quantMethod))
+      result.quantMethod = data.quantMethod as QuantMethod;
+    if (data.fitMode && VALID_FIT_MODES.has(data.fitMode))
+      result.fitMode = data.fitMode as ImageFitMode;
+    if (data.resizeFilter && VALID_RESIZE_FILTERS.has(data.resizeFilter))
+      result.resizeFilter = data.resizeFilter as ResizeFilter;
     return result;
   } catch {
     return {};

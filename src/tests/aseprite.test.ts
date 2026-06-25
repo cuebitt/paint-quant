@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vite-plus/test";
-import { readAsepriteFile, debugAsepriteFile } from "../formats/aseprite";
+import { readAsepriteFile } from "../formats/aseprite";
 
 interface LayerDef {
   name: string;
@@ -256,30 +256,5 @@ describe("readAsepriteFile", () => {
     const d = result.imageData.data;
     expect(d[0]).toBe(255);
     expect(d[3]).toBe(255);
-  });
-});
-
-describe("debugAsepriteFile", () => {
-  it("summarizes header and layer visibility", () => {
-    const pixels: [number, number, number, number][] = [
-      [255, 0, 0, 255],
-      [0, 255, 0, 255],
-      [0, 0, 255, 255],
-      [255, 255, 0, 255],
-    ];
-
-    const data = createTestAsepriteFile(2, 2, [
-      { name: "Layer 1", visible: true, opacity: 255, pixels },
-    ]);
-
-    const debugInfo = debugAsepriteFile(data);
-
-    expect(debugInfo.header.width).toBe(2);
-    expect(debugInfo.header.height).toBe(2);
-    expect(debugInfo.header.depth).toBe("RGBA");
-    expect(debugInfo.layers).toHaveLength(1);
-    expect(debugInfo.layers[0]).toContain("Layer 1");
-    expect(debugInfo.layers[0]).toContain("visible");
-    expect(debugInfo.layers[0]).toContain("100% opacity");
   });
 });

@@ -36,14 +36,21 @@ type ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
 
+const VALID_THEMES = new Set<string>(["dark", "light", "system"]);
+
+function parseTheme(value: string | null, fallback: Theme): Theme {
+  if (value && VALID_THEMES.has(value)) return value as Theme;
+  return fallback;
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
+  const [theme, setTheme] = useState<Theme>(() =>
+    parseTheme(localStorage.getItem(storageKey), defaultTheme),
   );
 
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => {

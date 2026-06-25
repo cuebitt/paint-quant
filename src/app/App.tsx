@@ -12,6 +12,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import { preprocessImageForCanvas } from "@/core/preprocess";
+import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
 
 function App() {
   const { state, dispatch, undo, redo } = useUndoRedo();
@@ -35,7 +36,11 @@ function App() {
       try {
         const workers = workersRef.current;
         if (!workers?.workerRef.current) {
-          dispatch({ type: "SET_ERROR", error: "Image processor not ready" });
+          dispatchError(
+            dispatch,
+            new Error("Image processor not ready"),
+            "Image processor not ready",
+          );
           return;
         }
 
@@ -89,10 +94,7 @@ function App() {
           workers.flushPendingResult();
         }
       } catch (err) {
-        dispatch({
-          type: "SET_ERROR",
-          error: err instanceof Error ? err.message : "Failed to process image",
-        });
+        dispatchError(dispatch, err, "Failed to process image");
       } finally {
         endTimer("process-image");
       }
@@ -135,7 +137,11 @@ function App() {
         const blob = await canvas.convertToBlob({ type: "image/png" });
         await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       } catch {
-        // clipboard unsupported or denied
+        dispatchError(
+          dispatch,
+          new Error("Clipboard failed"),
+          "Failed to copy to clipboard. Check browser permissions.",
+        );
       }
       endTimer("copy-to-clipboard");
     },
@@ -146,16 +152,7 @@ function App() {
       dispatch({ type: "SET_LOADING", loading: true });
       const s = stateRef.current;
       startTimer("process-image");
-      void processImage(
-        workers.originalImageRef.current,
-        s.selectedCanvas,
-        s.quantMethod,
-        s.fitMode,
-        s.paddingColor,
-        s.quantizationEnabled,
-        { colors: s.adaptiveColorCount, includeFixedPalette: s.includeFixedPalette },
-        { filter: s.resizeFilter, unsharpAmount: s.unsharpAmount },
-      );
+      void processImage(workers.originalImageRef.current, ...getProcessImageArgs(s));
     }
   }, [
     state.selectedCanvas,
@@ -182,7 +179,10 @@ function App() {
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
           {state.error && (
-            <div className="mx-auto mb-6 max-w-2xl rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+            <div
+              role="alert"
+              className="mx-auto mb-6 max-w-2xl rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive"
+            >
               {state.error}
             </div>
           )}

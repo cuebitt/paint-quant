@@ -1,6 +1,7 @@
 import pica from "pica";
 import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/core/palette";
+import { computeScale, rgbString } from "@/core/image-utils";
 
 export const DEFAULT_PADDING_COLOR: RGB = [255, 255, 255];
 
@@ -12,22 +13,6 @@ export interface ResizeOptions {
 }
 
 const picaInstance = pica();
-
-function rgbString(color: RGB): string {
-  return `rgb(${color[0]},${color[1]},${color[2]})`;
-}
-
-function computeScale(
-  imageWidth: number,
-  imageHeight: number,
-  targetWidth: number,
-  targetHeight: number,
-  fitMode: ImageFitMode,
-): number {
-  if (fitMode === "width") return targetWidth / imageWidth;
-  if (fitMode === "height") return targetHeight / imageHeight;
-  return Math.min(targetWidth / imageWidth, targetHeight / imageHeight);
-}
 
 export const preprocessImageForCanvas = async (
   image: HTMLImageElement,
@@ -93,52 +78,4 @@ export const preprocessImageForCanvas = async (
   finalCtx.drawImage(scaledCanvas, offsetX, offsetY);
 
   return finalCtx.getImageData(0, 0, canvasType.width, canvasType.height);
-};
-
-export const preprocessForDisplay = (
-  image: HTMLImageElement,
-  canvasType: CanvasType,
-  fitMode: ImageFitMode = "contain",
-  paddingColor: RGB = DEFAULT_PADDING_COLOR,
-): ImageData => {
-  const targetRatio = canvasType.width / canvasType.height;
-  const imageRatio = image.width / image.height;
-
-  let canvasWidth: number;
-  let canvasHeight: number;
-
-  if (fitMode === "width") {
-    canvasWidth = image.width;
-    canvasHeight = Math.round(image.width / targetRatio);
-  } else if (fitMode === "height") {
-    canvasHeight = image.height;
-    canvasWidth = Math.round(image.height * targetRatio);
-  } else if (imageRatio > targetRatio) {
-    canvasWidth = image.width;
-    canvasHeight = Math.round(image.width / targetRatio);
-  } else {
-    canvasHeight = image.height;
-    canvasWidth = Math.round(image.height * targetRatio);
-  }
-
-  const tempCanvas = document.createElement("canvas");
-  const tempCtx = tempCanvas.getContext("2d");
-  if (!tempCtx) throw new Error("Could not get 2D context for display canvas");
-  tempCanvas.width = canvasWidth;
-  tempCanvas.height = canvasHeight;
-
-  const scale = computeScale(image.width, image.height, canvasWidth, canvasHeight, fitMode);
-
-  const scaledWidth = Math.round(image.width * scale);
-  const scaledHeight = Math.round(image.height * scale);
-  const offsetX = (canvasWidth - scaledWidth) / 2;
-  const offsetY = (canvasHeight - scaledHeight) / 2;
-
-  tempCtx.imageSmoothingEnabled = true;
-  tempCtx.imageSmoothingQuality = "high";
-  tempCtx.fillStyle = rgbString(paddingColor);
-  tempCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-  tempCtx.drawImage(image, offsetX, offsetY, scaledWidth, scaledHeight);
-
-  return tempCtx.getImageData(0, 0, canvasWidth, canvasHeight);
 };

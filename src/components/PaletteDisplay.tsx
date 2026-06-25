@@ -22,10 +22,12 @@ export function PaletteDisplay({ title, colors }: PaletteDisplayProps) {
             const hex = rgbToHex(color);
             return (
               <div key={hex} className="flex flex-col items-center gap-1">
-                <div
+                <img
+                  src=""
+                  alt={`Color ${hex}`}
+                  title={hex}
                   className="size-8 rounded-md border border-border shadow-sm"
                   style={{ backgroundColor: hex }}
-                  title={hex}
                 />
                 <span className="text-[10px] leading-none text-muted-foreground">{hex}</span>
               </div>

@@ -1,14 +1,16 @@
 import { quantize, type QuantMethod, type QuantizeOptions } from "@/core/quantize";
 import type { RGB } from "@/core/palette";
 import type { ImageFitMode } from "@/types";
+import {
+  computeScale,
+  rgbString,
+  type ErrorResponse,
+  type SerializedImageData,
+} from "@/core/image-utils";
 
 interface QuantizeRequest {
   type: "quantize";
-  imageData: {
-    data: Uint8ClampedArray;
-    width: number;
-    height: number;
-  };
+  imageData: SerializedImageData;
   method: QuantMethod;
   options: QuantizeOptions;
 }
@@ -26,45 +28,16 @@ type WorkerRequest = QuantizeRequest | DisplayRequest;
 
 interface QuantizeResponse {
   type: "quantized";
-  quantized: {
-    data: Uint8ClampedArray;
-    width: number;
-    height: number;
-  };
+  quantized: SerializedImageData;
   adaptivePalette: readonly RGB[];
 }
 
 interface DisplayResponse {
   type: "displayed";
-  imageData: {
-    data: Uint8ClampedArray;
-    width: number;
-    height: number;
-  };
-}
-
-interface ErrorResponse {
-  type: "error";
-  message: string;
+  imageData: SerializedImageData;
 }
 
 type WorkerResponse = QuantizeResponse | DisplayResponse | ErrorResponse;
-
-function computeScale(
-  imageWidth: number,
-  imageHeight: number,
-  targetWidth: number,
-  targetHeight: number,
-  fitMode: ImageFitMode,
-): number {
-  if (fitMode === "width") return targetWidth / imageWidth;
-  if (fitMode === "height") return targetHeight / imageHeight;
-  return Math.min(targetWidth / imageWidth, targetHeight / imageHeight);
-}
-
-function rgbString(color: RGB): string {
-  return `rgb(${color[0]},${color[1]},${color[2]})`;
-}
 
 function handleDisplay(msg: DisplayRequest): DisplayResponse {
   const { imageBitmap, canvasWidth, canvasHeight, fitMode, paddingColor } = msg;
