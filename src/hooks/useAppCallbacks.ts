@@ -3,28 +3,8 @@ import type { Dispatch } from "preact/hooks";
 import type { RefObject } from "preact";
 import type { AppState, AppAction } from "@/app/app-state";
 import type { ProcessImageFn, ImageProcessorWorkers } from "@/hooks/useImageProcessor";
-import { CANVAS_TYPES } from "@/types";
-import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/formats/paint-nbt";
-import type { PaintingData } from "@/formats/paint-nbt";
-import { imageDataToBlob } from "@/lib/utils";
+import { importPaintFile, exportPaintFile, exportPng } from "@/lib/file-io";
 import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
-
-const NBT_CT_TO_CANVAS_INDEX = [0, 3, 1, 2] as const;
-
-function generateShortId(): string {
-  const bytes = new Uint8Array(6);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(36).padStart(2, "0"))
-    .join("")
-    .slice(0, 8);
-}
-
-function sanitizeForFilename(s: string): string {
-  return s
-    .replace(/[^a-zA-Z0-9 _-]/g, "")
-    .replace(/\s+/g, "_")
-    .slice(0, 48);
-}
 
 const IMPORT_HANDLERS: Record<
   string,
@@ -45,89 +25,6 @@ export function useAppCallbacks(
   processImage: ProcessImageFn,
   workers: ImageProcessorWorkers,
 ) {
-  const handleImportPaintFile = useCallback(
-    (file: File) => {
-      dispatch({ type: "SET_LOADING", loading: true });
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const painting: PaintingData = await readPaintFile(reader.result as ArrayBuffer);
-
-          const canvasTypeIndex = NBT_CT_TO_CANVAS_INDEX[painting.canvasType];
-          if (canvasTypeIndex === undefined) {
-            throw new Error(`Unknown canvas type: ${painting.canvasType}`);
-          }
-          const canvasType = CANVAS_TYPES[canvasTypeIndex]!;
-
-          const data = new Uint8ClampedArray(canvasType.width * canvasType.height * 4);
-          for (let i = 0; i < painting.pixels.length; i++) {
-            const [r, g, b] = painting.pixels[i]!;
-            data[i * 4] = r;
-            data[i * 4 + 1] = g;
-            data[i * 4 + 2] = b;
-            data[i * 4 + 3] = 255;
-          }
-          const imageData = new ImageData(data, canvasType.width, canvasType.height);
-
-          workers.quantizedDataRef.current = {
-            quantized: imageData,
-            adaptivePalette: [],
-          };
-          workers.originalImageRef.current = null;
-          workers.preprocessedDataRef.current = null;
-
-          let originalUrl: string;
-          if (painting.originalImage) {
-            const blob = new Blob([new Uint8Array(painting.originalImage).buffer as BlobPart], {
-              type: "image/webp",
-            });
-            originalUrl = URL.createObjectURL(blob);
-            const img = new Image();
-            await new Promise<void>((resolve, reject) => {
-              img.onload = () => resolve();
-              img.onerror = () => reject(new Error("Failed to load embedded original image"));
-              img.src = originalUrl;
-            });
-            workers.originalImageRef.current = img;
-          } else {
-            const blob = await imageDataToBlob(imageData);
-            originalUrl = URL.createObjectURL(blob);
-          }
-
-          const quantizedBlob = await imageDataToBlob(imageData);
-          const quantizedUrl = URL.createObjectURL(quantizedBlob);
-
-          const prevOriginal = stateRef.current?.originalUrl;
-          const prevQuantized = stateRef.current?.quantizedUrl;
-
-          dispatch({
-            type: "IMPORT_PAINT",
-            canvas: canvasType,
-            title: painting.title,
-            author: painting.author,
-            signed: painting.generation === 1 && painting.version === 2,
-            preprocessed: originalUrl,
-            processed: quantizedUrl,
-          });
-
-          if (prevOriginal) URL.revokeObjectURL(prevOriginal);
-          if (prevQuantized) URL.revokeObjectURL(prevQuantized);
-        } catch (err) {
-          dispatchError(dispatch, err, `Failed to import ${file.name}`);
-        }
-      };
-      reader.onerror = () => {
-        dispatchError(
-          dispatch,
-          new Error(`Failed to read ${file.name}`),
-          `Failed to read ${file.name}`,
-        );
-      };
-      reader.readAsArrayBuffer(file);
-    },
-    [dispatch, workers, stateRef],
-  );
-
   const readIntoImportWorker = useCallback(
     (
       file: File,
@@ -162,6 +59,11 @@ export function useAppCallbacks(
       }
     },
     [dispatch, workers],
+  );
+
+  const handleImportPaintFile = useCallback(
+    (file: File) => importPaintFile(file, dispatch, workers, stateRef),
+    [dispatch, workers, stateRef],
   );
 
   const handleUpload = useCallback(
@@ -209,104 +111,12 @@ export function useAppCallbacks(
     [processImage, handleImportPaintFile, workers, stateRef, dispatch, readIntoImportWorker],
   );
 
-  const handleExportPaintFile = useCallback(async () => {
-    if (!workers.quantizedDataRef.current) return;
+  const handleExportPaintFile = useCallback(
+    () => exportPaintFile(workers, state),
+    [state, workers],
+  );
 
-    const { quantized } = workers.quantizedDataRef.current;
-    const pixels: [number, number, number][] = [];
-    for (let i = 0; i < quantized.data.length; i += 4) {
-      pixels.push([quantized.data[i]!, quantized.data[i + 1]!, quantized.data[i + 2]!]);
-    }
-
-    let originalImage: Uint8Array | undefined;
-    if (state.embedOriginalImage) {
-      const preprocessedData = workers.preprocessedDataRef.current;
-      if (preprocessedData) {
-        try {
-          const canvas = new OffscreenCanvas(preprocessedData.width, preprocessedData.height);
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.putImageData(preprocessedData, 0, 0);
-            const blob = await canvas.convertToBlob({ type: "image/webp" });
-            originalImage = new Uint8Array(await blob.arrayBuffer());
-          }
-        } catch {
-          // WebP encoding not supported, skip original image
-        }
-      }
-    }
-
-    const timestamp = Date.now().toString(36);
-    const name = `${crypto.randomUUID()}_${timestamp}`;
-    const canvasTypeIndex = getCanvasTypeIndex(state.selectedCanvas);
-
-    const hasAuthorAndTitle = state.author !== "" && state.title !== "";
-    const paintBuffer = await writePaintFile({
-      canvasType: canvasTypeIndex,
-      pixels,
-      name,
-      author: hasAuthorAndTitle ? state.author : "",
-      title: hasAuthorAndTitle ? state.title : "",
-      generation: state.signed ? 1 : 0,
-      version: state.signed ? 2 : 99,
-      originalImage,
-    });
-
-    let filename: string;
-    if (hasAuthorAndTitle) {
-      const safeAuthor = sanitizeForFilename(state.author);
-      const safeTitle = sanitizeForFilename(state.title);
-      filename = `${safeAuthor}_${safeTitle}.paint`;
-    } else {
-      filename = `${generateShortId()}.paint`;
-    }
-
-    const blob = new Blob([paintBuffer as BlobPart], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [
-    state.selectedCanvas,
-    state.title,
-    state.author,
-    state.signed,
-    state.embedOriginalImage,
-    workers,
-  ]);
-
-  const handleExportPng = useCallback(() => {
-    if (!workers.quantizedDataRef.current) return;
-
-    const { quantized } = workers.quantizedDataRef.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = quantized.width;
-    canvas.height = quantized.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.putImageData(quantized, 0, 0);
-
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        dispatch({ type: "SET_ERROR", error: "Failed to export PNG" });
-        return;
-      }
-      const timestamp = Date.now().toString(36);
-      const name = `${crypto.randomUUID()}_${timestamp}`;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `painting_${name}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, "image/png");
-  }, [workers, dispatch]);
+  const handleExportPng = useCallback(() => exportPng(workers, dispatch), [workers, dispatch]);
 
   return { handleUpload, handleExportPaintFile, handleExportPng };
 }

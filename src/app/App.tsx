@@ -11,6 +11,7 @@ import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
+import { useClipboard } from "@/hooks/useClipboard";
 import { preprocessImageForCanvas } from "@/core/preprocess";
 import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
 
@@ -58,7 +59,6 @@ function App() {
           padding,
           resizeOptions,
         );
-
         workers.preprocessedDataRef.current = preprocessedData;
 
         const displayBitmap = await createImageBitmap(img);
@@ -83,10 +83,7 @@ function App() {
             options: quantOptions,
           });
         } else {
-          workers.quantizedDataRef.current = {
-            quantized: preprocessedData,
-            adaptivePalette: [],
-          };
+          workers.quantizedDataRef.current = { quantized: preprocessedData, adaptivePalette: [] };
           workers.pendingResultRef.current = {
             type: "preprocessed",
             processedData: preprocessedData,
@@ -114,6 +111,8 @@ function App() {
     workers,
   );
 
+  const handleCopyToClipboard = useClipboard(workers, dispatch, startTimer, endTimer);
+
   useKeyboardShortcuts({
     "ctrl+z": undo,
     "ctrl+shift+z": redo,
@@ -122,29 +121,7 @@ function App() {
     q: toggleQuantize,
     "ctrl+shift+e": handleExportPaintFile,
     "ctrl+shift+p": handleExportPng,
-    "ctrl+shift+c": async () => {
-      const result = workers.quantizedDataRef.current;
-      if (!result) return;
-
-      const { quantized } = result;
-      startTimer("copy-to-clipboard");
-      const canvas = new OffscreenCanvas(quantized.width, quantized.height);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.putImageData(quantized, 0, 0);
-      try {
-        const blob = await canvas.convertToBlob({ type: "image/png" });
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      } catch {
-        dispatchError(
-          dispatch,
-          new Error("Clipboard failed"),
-          "Failed to copy to clipboard. Check browser permissions.",
-        );
-      }
-      endTimer("copy-to-clipboard");
-    },
+    "ctrl+shift+c": handleCopyToClipboard,
   });
 
   useEffect(() => {
