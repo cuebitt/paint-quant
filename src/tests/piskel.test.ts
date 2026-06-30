@@ -1,14 +1,6 @@
 import { describe, it, expect } from "vite-plus/test";
-import { createCanvas } from "canvas";
+import { makePngDataUri, readPixel } from "./format-test-helpers";
 import { parsePiskel, type PiskelFile } from "../formats/piskel";
-
-function makePngDataUri(width: number, height: number, r: number, g: number, b: number): string {
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = `rgb(${r},${g},${b})`;
-  ctx.fillRect(0, 0, width, height);
-  return canvas.toDataURL("image/png");
-}
 
 interface LayerDef {
   name: string;
@@ -53,11 +45,6 @@ function buildPiskelJson(
     },
   };
   return JSON.stringify(file);
-}
-
-function readPixel(canvas: HTMLCanvasElement | OffscreenCanvas): Uint8ClampedArray {
-  const ctx = (canvas as HTMLCanvasElement).getContext("2d")!;
-  return ctx.getImageData(0, 0, 1, 1).data;
 }
 
 describe("parsePiskel", () => {
@@ -119,8 +106,12 @@ describe("parsePiskel", () => {
     )) as HTMLCanvasElement;
 
     const pixel = readPixel(canvas);
-    expect(pixel[0]).toBeGreaterThan(0);
-    expect(pixel[1]).toBeGreaterThan(0);
+    // Red (255,0,0) at 50% over green (0,255,0) at 100%
+    // Canvas globalAlpha compositing: 255*0.5 = 127.5 → 127 or 128
+    expect(pixel[0]).toBeGreaterThanOrEqual(127);
+    expect(pixel[0]).toBeLessThanOrEqual(128);
+    expect(pixel[1]).toBeGreaterThanOrEqual(127);
+    expect(pixel[1]).toBeLessThanOrEqual(128);
     expect(pixel[3]).toBe(255);
   });
 
