@@ -25,6 +25,7 @@ dist-ssr
 
 # Debug stuff
 test-data/
+coverage/
 
 # Slop stuff
 AGENTS.md
