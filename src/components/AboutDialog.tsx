@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { InfoIcon, ExternalLinkIcon } from "lucide-react";
+import { PaintFormatDialog } from "@/components/PaintFormatDialog";
 
 export function AboutDialog() {
   return (
@@ -57,15 +58,18 @@ export function AboutDialog() {
           </p>
         </div>
         <div className="border-t border-border pt-3">
-          <a
-            href="https://github.com/cuebitt/paintcraft"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline hover:text-foreground"
-          >
-            View on GitHub
-            <ExternalLinkIcon className="size-3.5" />
-          </a>
+          <div className="flex items-center gap-3">
+            <PaintFormatDialog />
+            <a
+              href="https://github.com/cuebitt/paintcraft"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline hover:text-foreground"
+            >
+              View on GitHub
+              <ExternalLinkIcon className="size-3.5" />
+            </a>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

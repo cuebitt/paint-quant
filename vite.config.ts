@@ -2,6 +2,7 @@ import { defineConfig, lazyPlugins } from "vite-plus";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import { markdownHtml } from "./vite-plugin-markdown-html";
 
 export default defineConfig({
   base: "/paintcraft/",
@@ -38,7 +39,7 @@ export default defineConfig({
     },
     ignorePatterns: ["dist"],
   },
-  plugins: lazyPlugins(() => [preact(), tailwindcss()]),
+  plugins: lazyPlugins(() => [preact(), tailwindcss(), markdownHtml()]),
   build: {
     rollupOptions: {
       output: {
