@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const QUANT_METHODS: { value: QuantMethod; label: string }[] = [
   { value: "median-cut", label: "Median Cut" },
@@ -19,12 +20,14 @@ interface QuantMethodSelectorProps {
   selectedMethod: QuantMethod;
   onChange: (method: QuantMethod) => void;
   disabled?: boolean;
+  showTooltips?: boolean;
 }
 
 export function QuantMethodSelector({
   selectedMethod,
   onChange,
   disabled = false,
+  showTooltips = true,
 }: QuantMethodSelectorProps) {
   return (
     <div className="flex items-center gap-3">
@@ -32,25 +35,34 @@ export function QuantMethodSelector({
         <SparklesIcon className="size-4 text-accent" />
         Method:
       </span>
-      <Select
-        value={selectedMethod}
-        onValueChange={(value) => onChange(value as QuantMethod)}
-        items={QUANT_METHODS}
-        disabled={disabled}
-      >
-        <SelectTrigger className="min-w-45">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {QUANT_METHODS.map((method) => (
-              <SelectItem key={method.value} value={method.value}>
-                {method.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+      <Tooltip disabled={!showTooltips}>
+        <TooltipTrigger
+          render={
+            <Select
+              value={selectedMethod}
+              onValueChange={(value) => onChange(value as QuantMethod)}
+              items={QUANT_METHODS}
+              disabled={disabled}
+            >
+              <SelectTrigger className="min-w-45">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {QUANT_METHODS.map((method) => (
+                    <SelectItem key={method.value} value={method.value}>
+                      {method.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          }
+        />
+        <TooltipContent side="bottom" sideOffset={8}>
+          Algorithm used for color quantization
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }

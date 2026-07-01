@@ -32,6 +32,8 @@ type ThemeProviderState = {
   setTheme: (theme: Theme) => void;
   accentColor: AccentColor;
   setAccentColor: (color: AccentColor) => void;
+  showTooltips: boolean;
+  setShowTooltips: (show: boolean) => void;
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
@@ -61,6 +63,11 @@ export function ThemeProvider({
     return ACCENT_COLORS[0]!;
   });
 
+  const [showTooltips, setShowTooltipsState] = useState<boolean>(() => {
+    const stored = localStorage.getItem(`${storageKey}-tooltips`);
+    return stored !== "false";
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
@@ -87,6 +94,14 @@ export function ThemeProvider({
     [storageKey],
   );
 
+  const setShowTooltips = useCallback(
+    (show: boolean) => {
+      localStorage.setItem(`${storageKey}-tooltips`, String(show));
+      setShowTooltipsState(show);
+    },
+    [storageKey],
+  );
+
   const value = {
     theme,
     setTheme: (theme: Theme) => {
@@ -95,6 +110,8 @@ export function ThemeProvider({
     },
     accentColor,
     setAccentColor,
+    showTooltips,
+    setShowTooltips,
   };
 
   return (

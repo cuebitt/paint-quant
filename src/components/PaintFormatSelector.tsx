@@ -1,5 +1,6 @@
-import type { ResizeFilter } from "@/core/preprocess";
-import { ScalingIcon } from "lucide-react";
+import type { PaintFormat } from "@/types";
+import { PAINT_FORMATS } from "@/types";
+import { FileIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,41 +11,34 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
-const RESIZE_FILTERS: { value: ResizeFilter; label: string }[] = [
-  { value: "box", label: "Box" },
-  { value: "hamming", label: "Hamming" },
-  { value: "lanczos2", label: "Lanczos 2" },
-  { value: "lanczos3", label: "Lanczos 3" },
-  { value: "mks2013", label: "Magic Kernel Sharp 2013" },
-  { value: "nearest", label: "Nearest Neighbor" },
-];
-
-interface ResizeFilterSelectorProps {
-  selectedFilter: ResizeFilter;
-  onChange: (filter: ResizeFilter) => void;
+interface PaintFormatSelectorProps {
+  selectedFormat: PaintFormat;
+  onChange: (format: PaintFormat) => void;
   disabled?: boolean;
   showTooltips?: boolean;
 }
 
-export function ResizeFilterSelector({
-  selectedFilter,
+export function PaintFormatSelector({
+  selectedFormat,
   onChange,
   disabled = false,
   showTooltips = true,
-}: ResizeFilterSelectorProps) {
+}: PaintFormatSelectorProps) {
+  const selected = PAINT_FORMATS.find((f) => f.value === selectedFormat);
+
   return (
     <div className="flex items-center gap-3">
       <span className="flex items-center gap-1.5 text-sm font-medium whitespace-nowrap text-foreground">
-        <ScalingIcon className="size-4 text-accent" />
-        Resize:
+        <FileIcon className="size-4 text-accent" />
+        Format:
       </span>
       <Tooltip disabled={!showTooltips}>
         <TooltipTrigger
           render={
             <Select
-              value={selectedFilter}
-              onValueChange={(value) => onChange(value as ResizeFilter)}
-              items={RESIZE_FILTERS}
+              value={selectedFormat}
+              onValueChange={(value) => onChange(value as PaintFormat)}
+              items={PAINT_FORMATS}
               disabled={disabled}
             >
               <SelectTrigger className="min-w-45">
@@ -52,9 +46,12 @@ export function ResizeFilterSelector({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {RESIZE_FILTERS.map((filter) => (
-                    <SelectItem key={filter.value} value={filter.value}>
-                      {filter.label}
+                  {PAINT_FORMATS.map((format) => (
+                    <SelectItem key={format.value} value={format.value}>
+                      <div className="flex flex-col">
+                        <span>{format.label}</span>
+                        <span className="text-xs text-muted-foreground">{format.description}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -63,7 +60,7 @@ export function ResizeFilterSelector({
           }
         />
         <TooltipContent side="bottom" sideOffset={8}>
-          Algorithm used when resizing the image to fit the canvas
+          {selected?.description}
         </TooltipContent>
       </Tooltip>
     </div>

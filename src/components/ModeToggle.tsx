@@ -1,4 +1,4 @@
-import { Moon, Sun, PaletteIcon } from "lucide-react";
+import { Moon, Sun, PaletteIcon, CircleHelpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
 import { useTheme, ACCENT_COLORS } from "@/components/ThemeProvider";
 
 export function ModeToggle() {
-  const { setTheme, setAccentColor } = useTheme();
+  const { setTheme, setAccentColor, showTooltips, setShowTooltips } = useTheme();
 
   return (
     <div className="flex items-center gap-1">
@@ -43,6 +43,16 @@ export function ModeToggle() {
           <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Button
+        variant={showTooltips ? "secondary" : "outline"}
+        size="icon"
+        onClick={() => setShowTooltips(!showTooltips)}
+        title={showTooltips ? "Hide tooltips" : "Show tooltips"}
+      >
+        <CircleHelpIcon className="h-[1.2rem] w-[1.2rem]" />
+        <span className="sr-only">Toggle tooltips</span>
+      </Button>
     </div>
   );
 }
