@@ -20,6 +20,7 @@ export const preprocessImageForCanvas = async (
   fitMode: ImageFitMode = "contain",
   paddingColor: RGB = DEFAULT_PADDING_COLOR,
   resizeOptions: ResizeOptions = { filter: "nearest", unsharpAmount: 0 },
+  paddingAlpha?: number,
 ): Promise<ImageData> => {
   const scale = computeScale(
     image.width,
@@ -42,7 +43,7 @@ export const preprocessImageForCanvas = async (
     tempCanvas.height = canvasType.height;
 
     tempCtx.imageSmoothingEnabled = false;
-    tempCtx.fillStyle = rgbString(paddingColor);
+    tempCtx.fillStyle = rgbString(paddingColor, paddingAlpha);
     tempCtx.fillRect(0, 0, canvasType.width, canvasType.height);
     tempCtx.drawImage(image, offsetX, offsetY, scaledWidth, scaledHeight);
 
@@ -73,7 +74,7 @@ export const preprocessImageForCanvas = async (
   const finalCtx = finalCanvas.getContext("2d");
   if (!finalCtx) throw new Error("Could not get 2D context for scaled output canvas");
 
-  finalCtx.fillStyle = rgbString(paddingColor);
+  finalCtx.fillStyle = rgbString(paddingColor, paddingAlpha);
   finalCtx.fillRect(0, 0, canvasType.width, canvasType.height);
   finalCtx.drawImage(scaledCanvas, offsetX, offsetY);
 

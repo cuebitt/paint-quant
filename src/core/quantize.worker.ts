@@ -22,6 +22,7 @@ interface DisplayRequest {
   canvasHeight: number;
   fitMode: ImageFitMode;
   paddingColor: RGB;
+  paddingAlpha?: number;
 }
 
 type WorkerRequest = QuantizeRequest | DisplayRequest;
@@ -40,7 +41,7 @@ interface DisplayResponse {
 type WorkerResponse = QuantizeResponse | DisplayResponse | ErrorResponse;
 
 function handleDisplay(msg: DisplayRequest): DisplayResponse {
-  const { imageBitmap, canvasWidth, canvasHeight, fitMode, paddingColor } = msg;
+  const { imageBitmap, canvasWidth, canvasHeight, fitMode, paddingColor, paddingAlpha } = msg;
 
   const imgW = imageBitmap.width;
   const imgH = imageBitmap.height;
@@ -78,7 +79,7 @@ function handleDisplay(msg: DisplayRequest): DisplayResponse {
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.fillStyle = rgbString(paddingColor);
+  ctx.fillStyle = rgbString(paddingColor, paddingAlpha);
   ctx.fillRect(0, 0, dw, dh);
   ctx.drawImage(imageBitmap, offsetX, offsetY, scaledWidth, scaledHeight);
   imageBitmap.close();

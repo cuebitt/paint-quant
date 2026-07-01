@@ -33,7 +33,17 @@ function App() {
   }, [state.quantizationEnabled, dispatch]);
 
   const processImage = useCallback<ProcessImageFn>(
-    async (img, canvas, method, mode, padding, quantEnabled, quantOptions, resizeOptions) => {
+    async (
+      img,
+      canvas,
+      method,
+      mode,
+      padding,
+      quantEnabled,
+      quantOptions,
+      resizeOptions,
+      paddingAlpha,
+    ) => {
       try {
         const workers = workersRef.current;
         if (!workers?.workerRef.current) {
@@ -58,6 +68,7 @@ function App() {
           mode,
           padding,
           resizeOptions,
+          paddingAlpha,
         );
         workers.preprocessedDataRef.current = preprocessedData;
 
@@ -69,6 +80,7 @@ function App() {
           canvasHeight: canvas.height,
           fitMode: mode,
           paddingColor: padding,
+          paddingAlpha,
         });
 
         if (quantEnabled) {
@@ -136,6 +148,7 @@ function App() {
     state.quantMethod,
     state.fitMode,
     state.paddingColor,
+    state.paddingAlpha,
     state.quantizationEnabled,
     state.adaptiveColorCount,
     state.includeFixedPalette,
@@ -178,8 +191,13 @@ function App() {
                 selectedCanvas={state.selectedCanvas}
                 onCanvasChange={(canvas) => dispatch({ type: "SET_CANVAS", canvas })}
                 paddingColorPreview={state.paddingColorPreview}
-                onPaddingPreview={(color) => dispatch({ type: "SET_PADDING_PREVIEW", color })}
-                onPaddingCommit={(color) => dispatch({ type: "SET_PADDING_COLOR", color })}
+                paddingAlpha={state.paddingAlpha}
+                onPaddingPreview={(color, alpha) =>
+                  dispatch({ type: "SET_PADDING_PREVIEW", color, alpha })
+                }
+                onPaddingCommit={(color, alpha) =>
+                  dispatch({ type: "SET_PADDING_COLOR", color, alpha })
+                }
                 showGrid={state.showGrid}
                 onToggleGrid={() => dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid })}
                 quantMethod={state.quantMethod}
@@ -212,6 +230,16 @@ function App() {
                 onEmbedOriginalImageChange={(embed) =>
                   dispatch({ type: "SET_EMBED_ORIGINAL_IMAGE", embed })
                 }
+                paintFormat={state.paintFormat}
+                onPaintFormatChange={(format) => dispatch({ type: "SET_PAINT_FORMAT", format })}
+                glass={state.glass}
+                onGlassChange={(glass) => dispatch({ type: "SET_GLASS", glass })}
+                sidesActive={state.sidesActive}
+                onSidesActiveChange={(active) => dispatch({ type: "SET_SIDES_ACTIVE", active })}
+                showTransparencyGrid={state.showTransparencyGrid}
+                onShowTransparencyGridChange={(show) =>
+                  dispatch({ type: "SET_SHOW_TRANSPARENCY_GRID", show })
+                }
                 loading={state.loading}
                 onExportPaint={handleExportPaintFile}
                 onExportPng={handleExportPng}
@@ -225,6 +253,7 @@ function App() {
                 cellsY={state.selectedCanvas.cellsY}
                 colorCount={state.quantizationEnabled ? state.adaptiveColorCount : 0}
                 quantizationEnabled={state.quantizationEnabled}
+                showTransparencyGrid={state.showTransparencyGrid}
               />
 
               {state.quantizationEnabled && (

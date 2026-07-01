@@ -21,5 +21,6 @@ export function getProcessImageArgs(s: AppState) {
     s.quantizationEnabled,
     { colors: s.adaptiveColorCount, includeFixedPalette: s.includeFixedPalette },
     { filter: s.resizeFilter, unsharpAmount: s.unsharpAmount },
+    s.glass ? s.paddingAlpha : 1,
   ] as const;
 }

@@ -41,6 +41,7 @@ export type ProcessImageFn = (
   quantEnabled: boolean,
   quantOptions: QuantizeOptions,
   resizeOptions: ResizeOptions,
+  paddingAlpha?: number,
 ) => Promise<void>;
 
 export function useImageProcessor(
