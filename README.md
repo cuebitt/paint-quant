@@ -11,7 +11,7 @@ Supports PNG, JPEG, WEBP, GIF, PSD, Aseprite, Pixil, Piskel, SVG, and `.paint` f
 - Loads PNG, JPEG, WEBP, GIF, SVG, PSD, Aseprite, Pixil, and Piskel (`.ase`, `.aseprite`, `.pixil`, `.piskel`)
 - Re-imports `.paint` files for further editing (auto-detects format variant)
 - Exports as `.paint` NBT, PNG, or copies to clipboard
-- Three format variants: `jop-1x` (base), `jop-delta` (Cobblemon Delta), `jop-2x` (glass + side paintings)
+- Three format variants: `jop-1x` (base), `jop-2x` (glass + side painting), `jop-delta` (Cobblemon Delta),
 
 **Image processing**
 
@@ -95,62 +95,24 @@ Deploys automatically on push to `main` with [GitHub Actions](.github/workflows/
 
 ## Canvas presets
 
-| Index | Name             | Dimensions | Cells | Aspect ratio |
-| ----- | ---------------- | ---------- | ----- | ------------ |
-| 0     | 1x1 Canvas       | 16×16      | 1×1   | 1:1          |
-| 1     | 2x1 Long Canvas  | 32×16      | 2×1   | 2:1          |
-| 2     | 1x2 Tall Canvas  | 16×32      | 1×2   | 1:2          |
-| 3     | 2x2 Square       | 32×32      | 2×2   | 1:1          |
-| 4     | 3x3 Square       | 48×48      | 3×3   | 1:1          |
-| 5     | 4x4 Large Square | 64×64      | 4×4   | 1:1          |
-| 6     | 3x2 Medium       | 48×32      | 3×2   | 3:2          |
-| 7     | 4x3 Wide         | 64×48      | 4×3   | 4:3          |
-| 8     | 2x3 Medium       | 32×48      | 2×3   | 2:3          |
-| 9     | 3x4 Tall         | 48×64      | 3×4   | 3:4          |
+| Index | Name             | Dimensions | Cells | Pixels | jop-1x | jop-2x | jop-delta |
+| ----- | ---------------- | ---------- | ----- | ------ | ------ | ------ | --------- |
+| 0     | 1x1 Canvas       | 16×16      | 1×1   | 256    | ✅     | ✅     | ✅        |
+| 1     | 2x1 Long Canvas  | 32×16      | 2×1   | 512    | ✅     | ✅     | ✅        |
+| 2     | 1x2 Tall Canvas  | 16×32      | 1×2   | 512    | ✅     | ✅     | ✅        |
+| 3     | 2x2 Square       | 32×32      | 2×2   | 1024   | ✅     | ✅     | ✅        |
+| 4     | 3x3 Square       | 48×48      | 3×3   | 2304   | ❌     | ✅     | ✅        |
+| 5     | 4x4 Large Square | 64×64      | 4×4   | 4096   | ❌     | ✅     | ✅        |
+| 6     | 3x2 Medium       | 48×32      | 3×2   | 1536   | ❌     | ✅     | ✅        |
+| 7     | 4x3 Wide         | 64×48      | 4×3   | 3072   | ❌     | ✅     | ✅        |
+| 8     | 2x3 Medium       | 32×48      | 2×3   | 1536   | ❌     | ✅     | ✅        |
+| 9     | 3x4 Tall         | 48×64      | 3×4   | 3072   | ❌     | ✅     | ✅        |
 
 ## .paint file format
 
-An uncompressed NBT binary. Three format variants:
+An uncompressed NBT binary. Three variants: `jop-1x` (base, 4 canvas types), `jop-2x` (glass + side painting), and `jop-delta` (Cobblemon Delta, 10 canvas types). See [paint_file_format.md](src/content/paint_file_format.md) for the full schema.
 
-| Variant     | Description          | Canvas types                     |
-| ----------- | -------------------- | -------------------------------- |
-| `jop-1x`    | Base Joy of Painting | 0–3 (16×16 to 32×32)             |
-| `jop-delta` | Cobblemon Delta      | 0–9 (all presets)                |
-| `jop-2x`    | Joy of Painting 2.x  | 0–9 (all presets, glass + sides) |
-
-### Common fields
-
-| Field        | Type      | Description                                   |
-| ------------ | --------- | --------------------------------------------- |
-| `ct`         | byte      | Canvas type index (0–9)                       |
-| `pixels`     | int array | ARGB pixel values                             |
-| `generation` | int       | 0 = unsigned, 1 = signed                      |
-| `v`          | int       | 99 = unsigned, 2 = signed                     |
-| `name`       | string    | Auto-generated UUID-based identifier          |
-| `title`      | string    | Only written if both title and author are set |
-| `author`     | string    | Only written if both title and author are set |
-
-### Additional fields (jop-2x only)
-
-| Field        | Type       | Description                         |
-| ------------ | ---------- | ----------------------------------- |
-| `img`        | byte array | Embedded WebP image (if enabled)    |
-| `sidePixels` | int array  | Edge pixel data for 3D canvas sides |
-
-### Canvas type → dimensions
-
-| Index | Dimensions | Pixels |
-| ----- | ---------- | ------ |
-| 0     | 16×16      | 256    |
-| 1     | 32×16      | 512    |
-| 2     | 16×32      | 512    |
-| 3     | 32×32      | 1024   |
-| 4     | 48×48      | 2304   |
-| 5     | 64×64      | 4096   |
-| 6     | 48×32      | 1536   |
-| 7     | 64×48      | 3072   |
-| 8     | 32×48      | 1536   |
-| 9     | 48×64      | 3072   |
+paintcraft embeds the original image as a WebP byte array under the `img` key in exported `.paint` files, so you can re-import and re-edit later.
 
 ## Libraries
 

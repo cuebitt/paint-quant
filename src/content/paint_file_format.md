@@ -1,8 +1,12 @@
-# .paint Format Documentation
+# .paint file format
 
-## xercapaint-1.21.1-1.1.0.jar (Base)
+An uncompressed NBT binary format. Three variants exist, each based on a different version of the Joy of Painting mod.
 
-**NBT Compound Schema:**
+## jop-1x (xercapaint 1.1.0 base)
+
+The original format. Supports four canvas sizes.
+
+**NBT schema:**
 
 ```jsonc
 {
@@ -40,40 +44,11 @@
 
 ---
 
-## xercapaint-1.21.1-1.1.0.jar (Cobblemon Delta)
+## jop-2x (xercapaint 2.0.1)
 
-**NBT Compound Schema:** Identical to 1.1.0 base
+Adds glass canvas and side painting support. Based on the original 4 canvas types.
 
-Only extends `CanvasType` from 4 → 10 entries. The `.paint` NBT format itself is unchanged.
-
-**CanvasType (10 types):**
-
-| ct  | Name              | Width | Height | Pixels |
-| --- | ----------------- | ----- | ------ | ------ |
-| 0   | SMALL             | 16    | 16     | 256    |
-| 1   | LARGE             | 32    | 32     | 1024   |
-| 2   | LONG              | 32    | 16     | 512    |
-| 3   | TALL              | 16    | 32     | 512    |
-| 4   | EXTRA_LARGE       | 48    | 48     | 2304   |
-| 5   | EXTRA_EXTRA_LARGE | 64    | 64     | 4096   |
-| 6   | EXTRA_LONG        | 48    | 32     | 1536   |
-| 7   | EXTRA_EXTRA_LONG  | 64    | 48     | 3072   |
-| 8   | EXTRA_TALL        | 32    | 48     | 1536   |
-| 9   | EXTRA_EXTRA_TALL  | 48    | 64     | 3072   |
-
-**Changes from base:**
-
-- `CanvasType` uses fields (`width`, `height`, `id`) instead of a switch
-- `fromByte` iterates `values()` — supports all 10 types
-- Creative-mode canvas lookup uses `Items.canvasItemFor(type)` instead of a switch with 4 cases
-- Import command requires op level 2 (`requires(source -> source.hasPermissionLevel(2))`)
-- `.paint` file tags are identical to base — no new NBT keys added
-
----
-
-## xercapaint-1.21.1-2.0.1.jar
-
-**NBT Compound Schema:**
+**NBT schema:**
 
 ```jsonc
 {
@@ -100,7 +75,7 @@ Only extends `CanvasType` from 4 → 10 entries. The `.paint` NBT format itself 
 }
 ```
 
-**CanvasType (4 types):** Same as 1.1.0 base (SMALL/LARGE/LONG/TALL).
+**CanvasType (4 types):** Same as jop-1x (SMALL/LARGE/LONG/TALL).
 
 **CanvasSides constants:**
 
@@ -121,17 +96,46 @@ Only extends `CanvasType` from 4 → 10 entries. The `.paint` NBT format itself 
 
 ---
 
-## Summary of Format Evolution
+## jop-delta (Cobblemon Delta)
 
-| Field         | 1.1.0 Base | 1.1.0 Delta | 2.0.1 |
-| ------------- | ---------- | ----------- | ----- |
-| `pixels`      | ✓          | ✓           | ✓     |
-| `ct` (range)  | 0–3        | 0–9         | 0–3   |
-| `title`       | ✓          | ✓           | ✓     |
-| `author`      | ✓          | ✓           | ✓     |
-| `name`        | ✓          | ✓           | ✓     |
-| `v`           | ✓          | ✓           | ✓     |
-| `generation`  | ✓          | ✓           | ✓     |
-| `glass`       | ✗          | ✗           | ✓     |
-| `sidePixels`  | ✗          | ✗           | ✓     |
-| `sidesActive` | ✗          | ✗           | ✓     |
+Same schema as jop-1x, but extends CanvasType from 4 to 10 entries. The NBT format itself is unchanged.
+
+**CanvasType (10 types):**
+
+| ct  | Name              | Width | Height | Pixels |
+| --- | ----------------- | ----- | ------ | ------ |
+| 0   | SMALL             | 16    | 16     | 256    |
+| 1   | LARGE             | 32    | 32     | 1024   |
+| 2   | LONG              | 32    | 16     | 512    |
+| 3   | TALL              | 16    | 32     | 512    |
+| 4   | EXTRA_LARGE       | 48    | 48     | 2304   |
+| 5   | EXTRA_EXTRA_LARGE | 64    | 64     | 4096   |
+| 6   | EXTRA_LONG        | 48    | 32     | 1536   |
+| 7   | EXTRA_EXTRA_LONG  | 64    | 48     | 3072   |
+| 8   | EXTRA_TALL        | 32    | 48     | 1536   |
+| 9   | EXTRA_EXTRA_TALL  | 48    | 64     | 3072   |
+
+**Changes from base:**
+
+- `CanvasType` uses fields (`width`, `height`, `id`) instead of a switch
+- `fromByte` iterates `values()` — supports all 10 types
+- Creative-mode canvas lookup uses `Items.canvasItemFor(type)` instead of a switch with 4 cases
+- Import command requires op level 2 (`requires(source -> source.hasPermissionLevel(2))`)
+- `.paint` file tags are identical to base — no new NBT keys added
+
+---
+
+## Summary of field support
+
+| Field         | jop-1x | jop-2x | jop-delta |
+| ------------- | ------ | ------ | --------- |
+| `pixels`      | ✓      | ✓      | ✓         |
+| `ct` (range)  | 0–3    | 0–3    | 0–9       |
+| `title`       | ✓      | ✓      | ✓         |
+| `author`      | ✓      | ✓      | ✓         |
+| `name`        | ✓      | ✓      | ✓         |
+| `v`           | ✓      | ✓      | ✓         |
+| `generation`  | ✓      | ✓      | ✓         |
+| `glass`       | ✗      | ✓      | ✗         |
+| `sidePixels`  | ✗      | ✓      | ✗         |
+| `sidesActive` | ✗      | ✓      | ✗         |
