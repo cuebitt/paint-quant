@@ -8,6 +8,7 @@ interface ImageComparisonProps {
   cellsY: number;
   colorCount: number;
   quantizationEnabled: boolean;
+  showTransparencyGrid: boolean;
 }
 
 export function ImageComparison({
@@ -18,6 +19,7 @@ export function ImageComparison({
   cellsY,
   colorCount,
   quantizationEnabled,
+  showTransparencyGrid,
 }: ImageComparisonProps) {
   const quantizedTitle = quantizationEnabled
     ? `Resized + Quantized (${colorCount} colors)`
@@ -31,6 +33,7 @@ export function ImageComparison({
         cellsX={cellsX}
         cellsY={cellsY}
         className="flex-1"
+        showTransparencyGrid={showTransparencyGrid}
       />
       <ImageDisplay
         imageUrl={quantizedUrl}
@@ -39,6 +42,7 @@ export function ImageComparison({
         cellsX={cellsX}
         cellsY={cellsY}
         className="flex-1"
+        showTransparencyGrid={showTransparencyGrid}
       />
     </div>
   );

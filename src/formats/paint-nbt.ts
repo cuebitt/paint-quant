@@ -1,5 +1,5 @@
 import { read, write, Int8, Int32, type CompoundTag } from "nbtify";
-import type { CanvasType } from "@/types";
+import type { CanvasType, PaintFormat } from "@/types";
 
 const PIXEL_COUNTS: Record<number, number> = {
   0: 256, // 16×16
@@ -29,6 +29,12 @@ const CANVAS_TYPE_BY_SIZE: Record<string, number> = {
 
 const SUPPORTED_SIZES = Object.keys(CANVAS_TYPE_BY_SIZE).join(", ");
 
+const MAX_CT_FOR_FORMAT: Record<PaintFormat, number> = {
+  "jop-1x": 3,
+  "jop-delta": 9,
+  "jop-2x": 3,
+};
+
 export interface PaintingData {
   canvasType: number;
   pixels: [number, number, number][];
@@ -38,6 +44,9 @@ export interface PaintingData {
   generation: number;
   version: number;
   originalImage?: Uint8Array;
+  glass?: boolean;
+  sidePixels?: [number, number, number][];
+  sidesActive?: boolean;
 }
 
 export function getCanvasTypeIndex(canvas: CanvasType): number {
@@ -51,9 +60,13 @@ export function getCanvasTypeIndex(canvas: CanvasType): number {
   return idx;
 }
 
-export async function writePaintFile(data: PaintingData): Promise<Uint8Array> {
-  if (data.canvasType < 0 || data.canvasType > 9) {
-    throw new Error(`Invalid canvas type: ${data.canvasType}. Must be 0–9.`);
+export async function writePaintFile(
+  data: PaintingData,
+  format: PaintFormat = "jop-delta",
+): Promise<Uint8Array> {
+  const maxCt = MAX_CT_FOR_FORMAT[format];
+  if (data.canvasType < 0 || data.canvasType > maxCt) {
+    throw new Error(`Invalid canvas type: ${data.canvasType}. Must be 0–${maxCt} for ${format}.`);
   }
 
   const expected = PIXEL_COUNTS[data.canvasType];
@@ -82,6 +95,22 @@ export async function writePaintFile(data: PaintingData): Promise<Uint8Array> {
     fields.img = data.originalImage;
   }
 
+  // Format-specific fields for jop-2x
+  if (format === "jop-2x") {
+    const hasGlass = data.glass ?? false;
+    fields.glass = new Int8(hasGlass ? 1 : 0);
+
+    const sidesActive = data.sidesActive ?? false;
+    if (sidesActive && data.sidePixels) {
+      fields.sidePixels = new Int32Array(
+        data.sidePixels.map(([r, g, b]) => (0xff << 24) | (r << 16) | (g << 8) | b),
+      );
+      fields.sidesActive = new Int8(1);
+    } else {
+      fields.sidesActive = new Int8(0);
+    }
+  }
+
   return write(fields, { rootName: "", endian: "big", compression: null });
 }
 
@@ -95,7 +124,6 @@ export async function readPaintFile(data: ArrayBuffer | Uint8Array): Promise<Pai
   const root = result.data as CompoundTag;
 
   const ct = (root.ct as Int8).valueOf();
-  // nbtify stores the pixel array as an Int32Array of packed ARGB values.
   const pixels = root.pixels as unknown as Int32Array;
   const generation = (root.generation as Int32).valueOf();
   const v = (root.v as Int32).valueOf();
@@ -116,6 +144,39 @@ export async function readPaintFile(data: ArrayBuffer | Uint8Array): Promise<Pai
     argb & 0xff,
   ]);
 
+  // Detect format from fields present
+  const hasGlass = "glass" in root;
+  const hasSidePixels = "sidePixels" in root;
+  const hasSidesActive = "sidesActive" in root;
+
+  let detectedFormat: PaintFormat;
+  if (hasGlass || hasSidePixels || hasSidesActive) {
+    detectedFormat = "jop-2x";
+  } else if (ct > 3) {
+    detectedFormat = "jop-delta";
+  } else {
+    detectedFormat = "jop-1x";
+  }
+
+  // Parse format-specific fields
+  let glass = false;
+  let sidePixels: [number, number, number][] | undefined;
+  let sidesActive = false;
+
+  if (detectedFormat === "jop-2x") {
+    glass = (root.glass as Int8).valueOf() === 1;
+    sidesActive = (root.sidesActive as Int8).valueOf() === 1;
+
+    if (sidesActive && "sidePixels" in root) {
+      const sidePixelsRaw = root.sidePixels as unknown as Int32Array;
+      sidePixels = Array.from(sidePixelsRaw, (argb: number) => [
+        (argb >> 16) & 0xff,
+        (argb >> 8) & 0xff,
+        argb & 0xff,
+      ]);
+    }
+  }
+
   return {
     canvasType: ct,
     pixels: rgbPixels,
@@ -125,5 +186,20 @@ export async function readPaintFile(data: ArrayBuffer | Uint8Array): Promise<Pai
     generation,
     version: v,
     ...(img ? { originalImage: img instanceof Uint8Array ? img : new Uint8Array(img) } : {}),
+    ...(detectedFormat === "jop-2x" ? { glass, sidesActive, sidePixels } : {}),
   };
+}
+
+export function detectFormat(painting: PaintingData): PaintFormat {
+  const hasGlass = painting.glass !== undefined;
+  const hasSidePixels = painting.sidePixels !== undefined;
+  const hasSidesActive = painting.sidesActive !== undefined;
+
+  if (hasGlass || hasSidePixels || hasSidesActive) {
+    return "jop-2x";
+  }
+  if (painting.canvasType > 3) {
+    return "jop-delta";
+  }
+  return "jop-1x";
 }

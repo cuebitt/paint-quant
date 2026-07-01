@@ -3,7 +3,12 @@ import type { RefObject } from "preact";
 import type { AppState, AppAction } from "@/app/app-state";
 import type { ImageProcessorWorkers } from "@/hooks/useImageProcessor";
 import { CANVAS_TYPES } from "@/types";
-import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/formats/paint-nbt";
+import {
+  writePaintFile,
+  readPaintFile,
+  getCanvasTypeIndex,
+  detectFormat,
+} from "@/formats/paint-nbt";
 import type { PaintingData } from "@/formats/paint-nbt";
 import { imageDataToBlob } from "@/lib/utils";
 import { dispatchError } from "@/lib/helpers";
@@ -36,6 +41,8 @@ export function importPaintFile(
   reader.onload = async () => {
     try {
       const painting: PaintingData = await readPaintFile(reader.result as ArrayBuffer);
+
+      const detectedFormat = detectFormat(painting);
 
       const canvasTypeIndex = NBT_CT_TO_CANVAS_INDEX[painting.canvasType];
       if (canvasTypeIndex === undefined) {
@@ -92,6 +99,9 @@ export function importPaintFile(
         signed: painting.generation === 1 && painting.version === 2,
         preprocessed: originalUrl,
         processed: quantizedUrl,
+        format: detectedFormat,
+        glass: painting.glass ?? false,
+        sidesActive: painting.sidesActive ?? false,
       });
 
       if (prevOriginal) URL.revokeObjectURL(prevOriginal);
@@ -140,21 +150,75 @@ export async function exportPaintFile(
     }
   }
 
+  // Sample edge pixels for sides when format is jop-2x and sidesActive
+  let sidePixels: [number, number, number][] | undefined;
+  if (state.paintFormat === "jop-2x" && state.sidesActive) {
+    const { width, height } = state.selectedCanvas;
+    sidePixels = [];
+    let idx = 0;
+
+    // Top row (left to right)
+    for (let x = 0; x < width; x++) {
+      const pixelIdx = x;
+      sidePixels[idx++] = [
+        quantized.data[pixelIdx * 4]!,
+        quantized.data[pixelIdx * 4 + 1]!,
+        quantized.data[pixelIdx * 4 + 2]!,
+      ];
+    }
+
+    // Bottom row (left to right)
+    for (let x = 0; x < width; x++) {
+      const pixelIdx = (height - 1) * width + x;
+      sidePixels[idx++] = [
+        quantized.data[pixelIdx * 4]!,
+        quantized.data[pixelIdx * 4 + 1]!,
+        quantized.data[pixelIdx * 4 + 2]!,
+      ];
+    }
+
+    // Left column (top to bottom)
+    for (let y = 0; y < height; y++) {
+      const pixelIdx = y * width;
+      sidePixels[idx++] = [
+        quantized.data[pixelIdx * 4]!,
+        quantized.data[pixelIdx * 4 + 1]!,
+        quantized.data[pixelIdx * 4 + 2]!,
+      ];
+    }
+
+    // Right column (top to bottom)
+    for (let y = 0; y < height; y++) {
+      const pixelIdx = y * width + (width - 1);
+      sidePixels[idx++] = [
+        quantized.data[pixelIdx * 4]!,
+        quantized.data[pixelIdx * 4 + 1]!,
+        quantized.data[pixelIdx * 4 + 2]!,
+      ];
+    }
+  }
+
   const timestamp = Date.now().toString(36);
   const name = `${crypto.randomUUID()}_${timestamp}`;
   const canvasTypeIndex = getCanvasTypeIndex(state.selectedCanvas);
 
   const hasAuthorAndTitle = state.author !== "" && state.title !== "";
-  const paintBuffer = await writePaintFile({
-    canvasType: canvasTypeIndex,
-    pixels,
-    name,
-    author: hasAuthorAndTitle ? state.author : "",
-    title: hasAuthorAndTitle ? state.title : "",
-    generation: state.signed ? 1 : 0,
-    version: state.signed ? 2 : 99,
-    originalImage,
-  });
+  const paintBuffer = await writePaintFile(
+    {
+      canvasType: canvasTypeIndex,
+      pixels,
+      name,
+      author: hasAuthorAndTitle ? state.author : "",
+      title: hasAuthorAndTitle ? state.title : "",
+      generation: state.signed ? 1 : 0,
+      version: state.signed ? 2 : 99,
+      originalImage,
+      glass: state.paintFormat === "jop-2x" ? state.glass : undefined,
+      sidesActive: state.paintFormat === "jop-2x" ? state.sidesActive : undefined,
+      sidePixels,
+    },
+    state.paintFormat,
+  );
 
   let filename: string;
   if (hasAuthorAndTitle) {

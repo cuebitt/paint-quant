@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vite-plus/test";
-import { writePaintFile, readPaintFile, getCanvasTypeIndex } from "@/formats/paint-nbt";
+import {
+  writePaintFile,
+  readPaintFile,
+  getCanvasTypeIndex,
+  detectFormat,
+} from "@/formats/paint-nbt";
 import type { PaintingData } from "@/formats/paint-nbt";
 import { CANVAS_TYPES } from "@/types";
 
@@ -138,5 +143,110 @@ describe("readPaintFile", () => {
     const data = makePaintData(0, 256);
     const result = await readPaintFile(await writePaintFile(data));
     expect(result.originalImage).toBeUndefined();
+  });
+});
+
+describe("writePaintFile format validation", () => {
+  it("rejects canvas type > 3 for jop-1x format", async () => {
+    await expect(writePaintFile(makePaintData(4, 2304), "jop-1x")).rejects.toThrow(
+      "Must be 0–3 for jop-1x",
+    );
+  });
+
+  it("rejects canvas type > 3 for jop-2x format", async () => {
+    await expect(writePaintFile(makePaintData(4, 2304), "jop-2x")).rejects.toThrow(
+      "Must be 0–3 for jop-2x",
+    );
+  });
+
+  it("allows canvas type 4-9 for jop-delta format", async () => {
+    const result = await writePaintFile(makePaintData(4, 2304), "jop-delta");
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result.byteLength).toBeGreaterThan(0);
+  });
+});
+
+describe("jop-2x format fields", () => {
+  it("round-trips glass field", async () => {
+    const data = makePaintData(0, 256, { glass: true });
+    const result = await readPaintFile(await writePaintFile(data, "jop-2x"));
+    expect(result.glass).toBe(true);
+  });
+
+  it("round-trips sidesActive and sidePixels", async () => {
+    const sidePixelCount = 2 * 16 + 2 * 16; // 64 for 16x16 canvas
+    const sidePixels: [number, number, number][] = Array.from(
+      { length: sidePixelCount },
+      (_, i) => [(i * 17) & 0xff, (i * 31) & 0xff, (i * 47) & 0xff],
+    );
+    const data = makePaintData(0, 256, { glass: false, sidesActive: true, sidePixels });
+    const result = await readPaintFile(await writePaintFile(data, "jop-2x"));
+    expect(result.sidesActive).toBe(true);
+    expect(result.sidePixels).toHaveLength(sidePixelCount);
+    for (let i = 0; i < sidePixelCount; i++) {
+      expect(result.sidePixels![i]).toEqual(sidePixels[i]);
+    }
+  });
+
+  it("defaults sidesActive to false when not provided", async () => {
+    const data = makePaintData(0, 256);
+    const result = await readPaintFile(await writePaintFile(data, "jop-2x"));
+    expect(result.sidesActive).toBe(false);
+  });
+});
+
+describe("detectFormat", () => {
+  it("detects jop-1x format", () => {
+    const painting: PaintingData = {
+      canvasType: 0,
+      pixels: [],
+      name: "",
+      author: "",
+      title: "",
+      generation: 0,
+      version: 1,
+    };
+    expect(detectFormat(painting)).toBe("jop-1x");
+  });
+
+  it("detects jop-delta format from ct > 3", () => {
+    const painting: PaintingData = {
+      canvasType: 4,
+      pixels: [],
+      name: "",
+      author: "",
+      title: "",
+      generation: 0,
+      version: 1,
+    };
+    expect(detectFormat(painting)).toBe("jop-delta");
+  });
+
+  it("detects jop-2x format from glass field", () => {
+    const painting: PaintingData = {
+      canvasType: 0,
+      pixels: [],
+      name: "",
+      author: "",
+      title: "",
+      generation: 0,
+      version: 1,
+      glass: true,
+    };
+    expect(detectFormat(painting)).toBe("jop-2x");
+  });
+
+  it("detects jop-2x format from sidesActive field", () => {
+    const painting: PaintingData = {
+      canvasType: 0,
+      pixels: [],
+      name: "",
+      author: "",
+      title: "",
+      generation: 0,
+      version: 1,
+      sidesActive: true,
+    };
+    expect(detectFormat(painting)).toBe("jop-2x");
   });
 });

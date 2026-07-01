@@ -8,6 +8,7 @@ interface ImageDisplayProps {
   cellsX?: number;
   cellsY?: number;
   className?: string;
+  showTransparencyGrid?: boolean;
 }
 
 export function ImageDisplay({
@@ -17,6 +18,7 @@ export function ImageDisplay({
   cellsX = 1,
   cellsY = 1,
   className = "",
+  showTransparencyGrid = false,
 }: ImageDisplayProps) {
   if (!imageUrl) return null;
 
@@ -30,7 +32,7 @@ export function ImageDisplay({
       </CardHeader>
       <CardContent>
         <div
-          className="relative overflow-hidden rounded-xl border-2 border-border bg-muted/50 transition-[border-radius] hover:rounded-none"
+          className={`relative overflow-hidden rounded-xl border-2 border-border transition-[border-radius] hover:rounded-none ${showTransparencyGrid ? "transparency-grid" : "bg-muted/50"}`}
           style={{ aspectRatio: `${cellsX} / ${cellsY}` }}
         >
           <img

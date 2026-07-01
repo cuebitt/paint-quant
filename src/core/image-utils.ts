@@ -1,7 +1,10 @@
 import type { ImageFitMode } from "@/types";
 import type { RGB } from "@/core/palette";
 
-export function rgbString(color: RGB): string {
+export function rgbString(color: RGB, alpha?: number): string {
+  if (alpha !== undefined) {
+    return `rgba(${color[0]},${color[1]},${color[2]},${alpha})`;
+  }
   return `rgb(${color[0]},${color[1]},${color[2]})`;
 }
 

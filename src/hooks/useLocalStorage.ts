@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "preact/hooks";
 import type { AppState } from "@/app/app-state";
 import type { QuantMethod } from "@/core/quantize";
-import type { ImageFitMode } from "@/types";
+import type { ImageFitMode, PaintFormat } from "@/types";
 import type { ResizeFilter } from "@/core/preprocess";
 
 const STORAGE_KEY = "paintcraft-preferences";
@@ -10,18 +10,20 @@ interface PersistedPreferences {
   quantMethod: string;
   fitMode: string;
   resizeFilter: string;
+  paintFormat: string;
   theme: string;
   lastUsed: number;
 }
 
 function savePreferences(
-  prefs: Pick<AppState, "quantMethod" | "fitMode" | "resizeFilter">,
+  prefs: Pick<AppState, "quantMethod" | "fitMode" | "resizeFilter" | "paintFormat">,
   theme: string,
 ) {
   const data: PersistedPreferences = {
     quantMethod: prefs.quantMethod,
     fitMode: prefs.fitMode,
     resizeFilter: prefs.resizeFilter,
+    paintFormat: prefs.paintFormat,
     theme,
     lastUsed: Date.now(),
   };
@@ -42,6 +44,7 @@ const VALID_RESIZE_FILTERS = new Set<string>([
   "lanczos3",
   "mks2013",
 ]);
+const VALID_PAINT_FORMATS = new Set<string>(["jop-1x", "jop-delta", "jop-2x"]);
 
 export function loadPreferences(): Partial<AppState> {
   try {
@@ -55,6 +58,8 @@ export function loadPreferences(): Partial<AppState> {
       result.fitMode = data.fitMode as ImageFitMode;
     if (data.resizeFilter && VALID_RESIZE_FILTERS.has(data.resizeFilter))
       result.resizeFilter = data.resizeFilter as ResizeFilter;
+    if (data.paintFormat && VALID_PAINT_FORMATS.has(data.paintFormat))
+      result.paintFormat = data.paintFormat as PaintFormat;
     return result;
   } catch {
     return {};
@@ -66,13 +71,13 @@ export function useLocalStorage(state: AppState, theme: string) {
 
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    const { quantMethod, fitMode, resizeFilter } = state;
+    const { quantMethod, fitMode, resizeFilter, paintFormat } = state;
     timeoutRef.current = setTimeout(() => {
-      savePreferences({ quantMethod, fitMode, resizeFilter }, theme);
+      savePreferences({ quantMethod, fitMode, resizeFilter, paintFormat }, theme);
     }, 500);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [state.quantMethod, state.fitMode, state.resizeFilter, theme]);
+  }, [state.quantMethod, state.fitMode, state.resizeFilter, state.paintFormat, theme]);
 }

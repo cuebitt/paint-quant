@@ -26,3 +26,38 @@ export const CANVAS_TYPES: CanvasType[] = [
   { name: "2×3 Medium", width: 32, height: 48, cellsX: 2, cellsY: 3 },
   { name: "3×4 Tall", width: 48, height: 64, cellsX: 3, cellsY: 4 },
 ];
+
+export type PaintFormat = "jop-1x" | "jop-delta" | "jop-2x";
+
+export const PAINT_FORMATS: { value: PaintFormat; label: string; description: string }[] = [
+  { value: "jop-1x", label: "Joy of Painting 1.x", description: "Base version (ct 0–3)" },
+  { value: "jop-delta", label: "Cobblemon Delta", description: "Extended canvas types (ct 0–9)" },
+  { value: "jop-2x", label: "Joy of Painting 2.x", description: "Glass & side painting (ct 0–3)" },
+];
+
+export const ALLOWED_CANVAS_TYPES_FOR_FORMAT: Record<PaintFormat, Set<string>> = {
+  "jop-1x": new Set(["1×1 Canvas", "2×2 Square", "2×1 Long Canvas", "1×2 Tall Canvas"]),
+  "jop-delta": new Set(CANVAS_TYPES.map((c) => c.name)),
+  "jop-2x": new Set(["1×1 Canvas", "2×2 Square", "2×1 Long Canvas", "1×2 Tall Canvas"]),
+};
+
+export function findClosestCanvas(current: CanvasType, format: PaintFormat): CanvasType {
+  const allowed = ALLOWED_CANVAS_TYPES_FOR_FORMAT[format];
+  if (allowed.has(current.name)) return current;
+
+  const currentArea = current.width * current.height;
+  let best: CanvasType | null = null;
+  let bestDist = Infinity;
+
+  for (const canvas of CANVAS_TYPES) {
+    if (!allowed.has(canvas.name)) continue;
+    const area = canvas.width * canvas.height;
+    const dist = Math.abs(area - currentArea);
+    if (dist < bestDist || (dist === bestDist && canvas.name < (best?.name ?? ""))) {
+      bestDist = dist;
+      best = canvas;
+    }
+  }
+
+  return best ?? CANVAS_TYPES[0]!;
+}
