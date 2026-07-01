@@ -4,6 +4,8 @@ Converts images into `.paint` files for the [Joy of Painting](https://modrinth.c
 
 Supports PNG, JPEG, WEBP, GIF, PSD, Aseprite, Pixil, Piskel, SVG, and `.paint` files. Can also re-import `.paint` files if you want to keep editing.
 
+<img width="1600" height="1055" alt="paintcraft demo using pack.png" src="https://github.com/user-attachments/assets/ba7037e6-7320-4502-a6ab-d2100507f85e" />
+
 ## What it does
 
 **Import & export**
