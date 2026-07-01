@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo } from "preact/hooks";
 import { AppHeader } from "@/components/AppHeader";
 import { UploadDropzone } from "@/components/UploadDropzone";
-import { ResultsToolbar } from "@/components/ResultsToolbar";
+import { Toolbar } from "@/components/Toolbar";
 import { ImageComparison } from "@/components/ImageComparison";
 import { PalettesSection } from "@/components/PalettesSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +13,6 @@ import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import { useClipboard } from "@/hooks/useClipboard";
 import { preprocessImageForCanvas } from "@/core/preprocess";
 import { useAppStore, getProcessImageArgs } from "@/app/store";
-import { findClosestCanvas } from "@/types";
 import { dispatchError } from "@/lib/helpers";
 
 function App() {
@@ -195,87 +194,7 @@ function App() {
             </div>
           ) : (
             <div className="flex flex-col gap-8">
-              <ResultsToolbar
-                selectedCanvas={state.selectedCanvas}
-                onCanvasChange={(canvas) => useAppStore.getState().setCanvas(canvas)}
-                paddingColorPreview={state.paddingColorPreview}
-                paddingAlpha={state.paddingAlpha}
-                onPaddingPreview={(color, alpha) =>
-                  useAppStore.getState().setPaddingColorPreview(color, alpha)
-                }
-                onPaddingCommit={(color, alpha) =>
-                  useAppStore.getState().setPaddingColor(color, alpha)
-                }
-                showGrid={state.showGrid}
-                onToggleGrid={toggleGrid}
-                quantMethod={state.quantMethod}
-                onQuantMethodChange={(method) => useAppStore.getState().setQuantMethod(method)}
-                fitMode={state.fitMode}
-                onFitModeChange={(mode) => useAppStore.getState().setFitMode(mode)}
-                quantizationEnabled={state.quantizationEnabled}
-                onQuantizationEnabledChange={(enabled) =>
-                  useAppStore.getState().setQuantizationEnabled(enabled)
-                }
-                adaptiveColorCount={state.adaptiveColorCount}
-                onAdaptiveColorCountChange={(count) =>
-                  useAppStore.getState().setAdaptiveColorCount(count)
-                }
-                includeFixedPalette={state.includeFixedPalette}
-                onIncludeFixedPaletteChange={(include) =>
-                  useAppStore.getState().setIncludeFixedPalette(include)
-                }
-                resizeFilter={state.resizeFilter}
-                onResizeFilterChange={(filter) => useAppStore.getState().setResizeFilter(filter)}
-                unsharpAmount={state.unsharpAmount}
-                onUnsharpAmountChange={(amount) => useAppStore.getState().setUnsharpAmount(amount)}
-                title={state.title}
-                onTitleChange={(title) => useAppStore.getState().setTitle(title)}
-                author={state.author}
-                onAuthorChange={(author) => useAppStore.getState().setAuthor(author)}
-                signed={state.signed}
-                onSignedChange={(signed) => useAppStore.getState().setSigned(signed)}
-                embedOriginalImage={state.embedOriginalImage}
-                onEmbedOriginalImageChange={(embed) =>
-                  useAppStore.getState().setEmbedOriginalImage(embed)
-                }
-                paintFormat={state.paintFormat}
-                onPaintFormatChange={(format) =>
-                  useAppStore.getState()._set(
-                    {
-                      paintFormat: format,
-                      selectedCanvas: findClosestCanvas(
-                        useAppStore.getState().selectedCanvas,
-                        format,
-                      ),
-                      glassPadding: useAppStore.getState().glass && format === "jop-2x",
-                    },
-                    "setPaintFormat",
-                  )
-                }
-                glass={state.glass}
-                onGlassChange={(glass) =>
-                  useAppStore.getState()._set(
-                    {
-                      glass,
-                      glassPadding: glass && useAppStore.getState().paintFormat === "jop-2x",
-                      paddingAlpha: glass ? 0 : 1,
-                    },
-                    "setGlass",
-                  )
-                }
-                sidesActive={state.sidesActive}
-                onSidesActiveChange={(active) =>
-                  useAppStore.getState()._set({ sidesActive: active }, "setSidesActive")
-                }
-                showTransparencyGrid={state.showTransparencyGrid}
-                onShowTransparencyGridChange={(show) =>
-                  useAppStore.getState().setShowTransparencyGrid(show)
-                }
-                loading={state.loading}
-                onExportPaint={handleExportPaintFile}
-                onExportPng={handleExportPng}
-                onReset={() => useAppStore.getState().reset()}
-              />
+              <Toolbar onExportPaint={handleExportPaintFile} onExportPng={handleExportPng} />
               <ImageComparison
                 originalUrl={state.originalUrl}
                 quantizedUrl={state.quantizedUrl}

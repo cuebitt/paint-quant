@@ -9,7 +9,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { FileTextIcon } from "lucide-react";
-import html from "@/content/paint_file_format.md?html";
+import DOMPurify from "dompurify";
+import rawHtml from "@/content/paint_file_format.md?html";
+
+const html = DOMPurify.sanitize(rawHtml);
 
 export function PaintFormatDialog() {
   const [open, setOpen] = useState(false);

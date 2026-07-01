@@ -4,8 +4,8 @@ import type { CanvasType, ImageFitMode, PaintFormat } from "@/types";
 import type { RGB } from "@/core/palette";
 import type { ResizeFilter } from "@/core/preprocess";
 import { DEFAULT_PADDING_COLOR } from "@/core/preprocess";
-import { CANVAS_TYPES } from "@/types";
-import { loadPreferences } from "@/hooks/useLocalStorage";
+import { CANVAS_TYPES, findClosestCanvas } from "@/types";
+import { loadPreferences } from "@/hooks/preferences";
 
 export interface AppState {
   originalUrl: string | null;
@@ -125,6 +125,9 @@ interface StoreActions {
   setSigned: (signed: boolean) => void;
   setEmbedOriginalImage: (embed: boolean) => void;
   setShowTransparencyGrid: (show: boolean) => void;
+  setPaintFormat: (format: PaintFormat) => void;
+  setGlass: (glass: boolean) => void;
+  setSidesActive: (active: boolean) => void;
   reset: () => void;
 }
 
@@ -256,6 +259,29 @@ export const useAppStore = create<StoreState>()((set, get) => ({
     get()._set({ embedOriginalImage: embed }, "setEmbedOriginalImage"),
   setShowTransparencyGrid: (show) =>
     get()._set({ showTransparencyGrid: show }, "setShowTransparencyGrid"),
+  setPaintFormat: (format) => {
+    const s = get() as StoreState;
+    get()._set(
+      {
+        paintFormat: format,
+        selectedCanvas: findClosestCanvas(s.selectedCanvas, format),
+        glassPadding: s.glass && format === "jop-2x",
+      },
+      "setPaintFormat",
+    );
+  },
+  setGlass: (glass) => {
+    const s = get() as StoreState;
+    get()._set(
+      {
+        glass,
+        glassPadding: glass && s.paintFormat === "jop-2x",
+        paddingAlpha: glass ? 0 : 1,
+      },
+      "setGlass",
+    );
+  },
+  setSidesActive: (active) => get()._set({ sidesActive: active }, "setSidesActive"),
   reset: () => {
     set({ ...initialState, past: [], future: [] });
   },

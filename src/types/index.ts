@@ -29,10 +29,27 @@ export const CANVAS_TYPES: CanvasType[] = [
 
 export type PaintFormat = "jop-1x" | "jop-delta" | "jop-2x";
 
-export const PAINT_FORMATS: { value: PaintFormat; label: string; description: string }[] = [
-  { value: "jop-1x", label: "Joy of Painting 1.x", description: "Base version (ct 0–3)" },
-  { value: "jop-delta", label: "Cobblemon Delta", description: "Extended canvas types (ct 0–9)" },
-  { value: "jop-2x", label: "Joy of Painting 2.x", description: "Glass & side painting (ct 0–3)" },
+export const PAINT_FORMATS: {
+  value: PaintFormat;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "jop-1x",
+    label: "Joy of Painting 1.x",
+    description: "Base version",
+  },
+
+  {
+    value: "jop-2x",
+    label: "Joy of Painting 2.x",
+    description: "Glass & side painting",
+  },
+  {
+    value: "jop-delta",
+    label: "Cobblemon Delta",
+    description: "Extended canvas types",
+  },
 ];
 
 export const ALLOWED_CANVAS_TYPES_FOR_FORMAT: Record<PaintFormat, Set<string>> = {
