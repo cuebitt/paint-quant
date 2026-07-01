@@ -1,113 +1,115 @@
-import { describe, it, expect } from "vite-plus/test";
-import { appReducer, initialState } from "@/app/app-state";
+import { describe, it, expect, beforeEach } from "vite-plus/test";
+import { useAppStore } from "@/app/store";
 import { CANVAS_TYPES } from "@/types";
 
-describe("appReducer", () => {
-  it("SET_ORIGINAL sets url and clears error", () => {
-    const withError = { ...initialState, error: "previous error" };
-    const state = appReducer(withError, { type: "SET_ORIGINAL", url: "test.png" });
-    expect(state.originalUrl).toBe("test.png");
-    expect(state.error).toBeNull();
+describe("appStore", () => {
+  beforeEach(() => {
+    useAppStore.getState().reset();
   });
 
-  it("SET_RESULT updates urls, palette, and clears loading", () => {
-    const state = appReducer(initialState, {
-      type: "SET_RESULT",
-      preprocessed: "pre.png",
-      processed: "proc.png",
-      adaptive: [[100, 200, 50]],
-    });
-    expect(state.preprocessedUrl).toBe("pre.png");
-    expect(state.quantizedUrl).toBe("proc.png");
-    expect(state.adaptivePalette).toEqual([[100, 200, 50]]);
-    expect(state.loading).toBe(false);
+  it("setOriginal sets url and clears error", () => {
+    useAppStore.getState().setError("previous error");
+    useAppStore.getState().setOriginal("test.png");
+    const s = useAppStore.getState();
+    expect(s.originalUrl).toBe("test.png");
+    expect(s.error).toBeNull();
   });
 
-  it("SET_ERROR clears loading", () => {
-    const loading = { ...initialState, loading: true };
-    const state = appReducer(loading, { type: "SET_ERROR", error: "something broke" });
-    expect(state.error).toBe("something broke");
-    expect(state.loading).toBe(false);
+  it("setResult updates urls, palette, and clears loading", () => {
+    useAppStore.getState().setLoading(true);
+    useAppStore.getState().setResult("pre.png", "proc.png", [[100, 200, 50]]);
+    const s = useAppStore.getState();
+    expect(s.preprocessedUrl).toBe("pre.png");
+    expect(s.quantizedUrl).toBe("proc.png");
+    expect(s.adaptivePalette).toEqual([[100, 200, 50]]);
+    expect(s.loading).toBe(false);
   });
 
-  it("SET_ERROR with null clears both error and loading", () => {
-    const withError = { ...initialState, error: "old error", loading: true };
-    const state = appReducer(withError, { type: "SET_ERROR", error: null });
-    expect(state.error).toBeNull();
-    expect(state.loading).toBe(false);
+  it("setError clears loading", () => {
+    useAppStore.getState().setLoading(true);
+    useAppStore.getState().setError("something broke");
+    const s = useAppStore.getState();
+    expect(s.error).toBe("something broke");
+    expect(s.loading).toBe(false);
   });
 
-  it("SET_PADDING_COLOR updates both paddingColor and preview", () => {
-    const state = appReducer(initialState, {
-      type: "SET_PADDING_COLOR",
-      color: [100, 200, 50],
-    });
-    expect(state.paddingColor).toEqual([100, 200, 50]);
-    expect(state.paddingColorPreview).toEqual([100, 200, 50]);
+  it("setError with null clears both error and loading", () => {
+    useAppStore.getState().setError("old error");
+    useAppStore.getState().setLoading(true);
+    useAppStore.getState().setError(null);
+    const s = useAppStore.getState();
+    expect(s.error).toBeNull();
+    expect(s.loading).toBe(false);
   });
 
-  it("SET_PADDING_PREVIEW updates only preview", () => {
-    const state = appReducer(initialState, {
-      type: "SET_PADDING_PREVIEW",
-      color: [100, 200, 50],
-    });
-    expect(state.paddingColor).toEqual(initialState.paddingColor);
-    expect(state.paddingColorPreview).toEqual([100, 200, 50]);
+  it("setPaddingColor updates both paddingColor and preview", () => {
+    useAppStore.getState().setPaddingColor([100, 200, 50]);
+    const s = useAppStore.getState();
+    expect(s.paddingColor).toEqual([100, 200, 50]);
+    expect(s.paddingColorPreview).toEqual([100, 200, 50]);
   });
 
-  it("RESET returns to initial state", () => {
-    const modified = {
-      ...initialState,
-      originalUrl: "something.png",
-      loading: true,
-      error: "oops",
-      quantMethod: "neuquant" as const,
-    };
-    const state = appReducer(modified, { type: "RESET" });
-    expect(state).toEqual(initialState);
+  it("setPaddingColorPreview updates only preview", () => {
+    useAppStore.getState().setPaddingColorPreview([100, 200, 50]);
+    const s = useAppStore.getState();
+    expect(s.paddingColor).toEqual(useAppStore.getState().paddingColor);
+    expect(s.paddingColorPreview).toEqual([100, 200, 50]);
+  });
+
+  it("reset returns to initial state", () => {
+    useAppStore.getState().setOriginal("something.png");
+    useAppStore.getState().setLoading(true);
+    useAppStore.getState().setError("oops");
+    useAppStore.getState().setQuantMethod("neuquant");
+    useAppStore.getState().reset();
+    const s = useAppStore.getState();
+    expect(s.originalUrl).toBeNull();
+    expect(s.loading).toBe(false);
+    expect(s.error).toBeNull();
+    expect(s.quantMethod).toBe("median-cut");
   });
 
   it("toggles each field independently", () => {
-    let state = appReducer(initialState, { type: "SET_LOADING", loading: true });
-    expect(state.loading).toBe(true);
+    useAppStore.getState().setLoading(true);
+    expect(useAppStore.getState().loading).toBe(true);
 
-    state = appReducer(initialState, { type: "SET_CANVAS", canvas: CANVAS_TYPES[3]! });
-    expect(state.selectedCanvas).toBe(CANVAS_TYPES[3]!);
+    useAppStore.getState().setCanvas(CANVAS_TYPES[3]!);
+    expect(useAppStore.getState().selectedCanvas).toBe(CANVAS_TYPES[3]!);
 
-    state = appReducer(initialState, { type: "SET_SHOW_GRID", show: true });
-    expect(state.showGrid).toBe(true);
+    useAppStore.getState().setShowGrid(true);
+    expect(useAppStore.getState().showGrid).toBe(true);
 
-    state = appReducer(initialState, { type: "SET_QUANT_METHOD", method: "neuquant" });
-    expect(state.quantMethod).toBe("neuquant");
+    useAppStore.getState().setQuantMethod("neuquant");
+    expect(useAppStore.getState().quantMethod).toBe("neuquant");
 
-    state = appReducer(initialState, { type: "SET_FIT_MODE", mode: "width" });
-    expect(state.fitMode).toBe("width");
+    useAppStore.getState().setFitMode("width");
+    expect(useAppStore.getState().fitMode).toBe("width");
 
-    state = appReducer(initialState, { type: "SET_QUANTIZATION_ENABLED", enabled: true });
-    expect(state.quantizationEnabled).toBe(true);
+    useAppStore.getState().setQuantizationEnabled(true);
+    expect(useAppStore.getState().quantizationEnabled).toBe(true);
 
-    state = appReducer(initialState, { type: "SET_ADAPTIVE_COLOR_COUNT", count: 8 });
-    expect(state.adaptiveColorCount).toBe(8);
+    useAppStore.getState().setAdaptiveColorCount(8);
+    expect(useAppStore.getState().adaptiveColorCount).toBe(8);
 
-    state = appReducer(initialState, { type: "SET_INCLUDE_FIXED_PALETTE", include: true });
-    expect(state.includeFixedPalette).toBe(true);
+    useAppStore.getState().setIncludeFixedPalette(true);
+    expect(useAppStore.getState().includeFixedPalette).toBe(true);
 
-    state = appReducer(initialState, { type: "SET_RESIZE_FILTER", filter: "lanczos3" });
-    expect(state.resizeFilter).toBe("lanczos3");
+    useAppStore.getState().setResizeFilter("lanczos3");
+    expect(useAppStore.getState().resizeFilter).toBe("lanczos3");
 
-    state = appReducer(initialState, { type: "SET_UNSHARP_AMOUNT", amount: 150 });
-    expect(state.unsharpAmount).toBe(150);
+    useAppStore.getState().setUnsharpAmount(150);
+    expect(useAppStore.getState().unsharpAmount).toBe(150);
 
-    state = appReducer(initialState, { type: "SET_TITLE", title: "Sunset" });
-    expect(state.title).toBe("Sunset");
+    useAppStore.getState()._set({ title: "Sunset" }, "setTitle");
+    expect(useAppStore.getState().title).toBe("Sunset");
 
-    state = appReducer(initialState, { type: "SET_AUTHOR", author: "Player" });
-    expect(state.author).toBe("Player");
+    useAppStore.getState()._set({ author: "Player" }, "setAuthor");
+    expect(useAppStore.getState().author).toBe("Player");
 
-    state = appReducer(initialState, { type: "SET_SIGNED", signed: true });
-    expect(state.signed).toBe(true);
+    useAppStore.getState()._set({ signed: true }, "setSigned");
+    expect(useAppStore.getState().signed).toBe(true);
 
-    state = appReducer({ ...initialState, signed: true }, { type: "SET_SIGNED", signed: false });
-    expect(state.signed).toBe(false);
+    useAppStore.getState()._set({ signed: false }, "setSigned");
+    expect(useAppStore.getState().signed).toBe(false);
   });
 });
