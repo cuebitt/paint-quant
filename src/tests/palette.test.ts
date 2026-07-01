@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vite-plus/test";
-import { rgbToHex, hexToRgb, FIXED_PALETTE } from "../core/palette";
+import { rgbToHex, hexToRgb, rgbaToHex, hexToRgba, FIXED_PALETTE } from "../core/palette";
 
 describe("rgbToHex", () => {
   it("converts pure red to hex", () => {
@@ -68,5 +68,52 @@ describe("FIXED_PALETTE", () => {
       expect(b).toBeGreaterThanOrEqual(0);
       expect(b).toBeLessThanOrEqual(255);
     }
+  });
+});
+
+describe("rgbaToHex", () => {
+  it("converts RGB + alpha to 8-char hex", () => {
+    expect(rgbaToHex([255, 0, 0], 1)).toBe("#ff0000ff");
+  });
+
+  it("converts with half alpha", () => {
+    expect(rgbaToHex([0, 255, 0], 0.5)).toBe("#00ff0080");
+  });
+
+  it("converts with zero alpha", () => {
+    expect(rgbaToHex([0, 0, 255], 0)).toBe("#0000ff00");
+  });
+
+  it("rounds alpha to nearest byte", () => {
+    const result = rgbaToHex([128, 128, 128], 0.5);
+    expect(result).toHaveLength(9);
+  });
+});
+
+describe("hexToRgba", () => {
+  it("parses 8-char hex with alpha", () => {
+    const result = hexToRgba("#ff000080");
+    expect(result.color).toEqual([255, 0, 0]);
+    expect(result.alpha).toBeCloseTo(128 / 255);
+  });
+
+  it("parses 6-char hex (defaults alpha to 1)", () => {
+    const result = hexToRgba("#00ff00");
+    expect(result.color).toEqual([0, 255, 0]);
+    expect(result.alpha).toBe(1);
+  });
+
+  it("roundtrips with rgbaToHex", () => {
+    const original = { color: [50, 100, 150] as [number, number, number], alpha: 0.75 };
+    const hex = rgbaToHex(original.color, original.alpha);
+    const result = hexToRgba(hex);
+    expect(result.color).toEqual(original.color);
+    expect(result.alpha).toBeCloseTo(original.alpha, 2);
+  });
+
+  it("parses fully transparent hex", () => {
+    const result = hexToRgba("#00000000");
+    expect(result.color).toEqual([0, 0, 0]);
+    expect(result.alpha).toBe(0);
   });
 });

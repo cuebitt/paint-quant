@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vite-plus/test";
-import { useAppStore } from "@/app/store";
+import { useAppStore, getProcessImageArgs } from "@/app/store";
 import { CANVAS_TYPES } from "@/types";
 
 describe("appStore", () => {
@@ -111,5 +111,134 @@ describe("appStore", () => {
 
     useAppStore.getState()._set({ signed: false }, "setSigned");
     expect(useAppStore.getState().signed).toBe(false);
+  });
+
+  it("setPaddingAlpha updates paddingAlpha", () => {
+    useAppStore.getState().setPaddingAlpha(0.5);
+    expect(useAppStore.getState().paddingAlpha).toBe(0.5);
+  });
+
+  it("setPaintFormat updates format and finds closest canvas", () => {
+    const large = CANVAS_TYPES.find((c) => c.name === "4×4 Large Square")!;
+    useAppStore.getState().setCanvas(large);
+    useAppStore.getState().setPaintFormat("jop-1x");
+    const s = useAppStore.getState();
+    expect(s.paintFormat).toBe("jop-1x");
+    const allowed = new Set(["1×1 Canvas", "2×2 Square", "2×1 Long Canvas", "1×2 Tall Canvas"]);
+    expect(allowed.has(s.selectedCanvas.name)).toBe(true);
+  });
+
+  it("setGlass toggles glass and updates paddingAlpha", () => {
+    useAppStore.getState().setGlass(true);
+    expect(useAppStore.getState().glass).toBe(true);
+    expect(useAppStore.getState().paddingAlpha).toBe(0);
+    useAppStore.getState().setGlass(false);
+    expect(useAppStore.getState().glass).toBe(false);
+    expect(useAppStore.getState().paddingAlpha).toBe(1);
+  });
+
+  it("setGlass with jop-2x format sets glassPadding", () => {
+    useAppStore.getState().setPaintFormat("jop-2x");
+    useAppStore.getState().setGlass(true);
+    expect(useAppStore.getState().glassPadding).toBe(true);
+  });
+
+  it("setGlass with non-jop-2x format does not set glassPadding", () => {
+    useAppStore.getState().setPaintFormat("jop-1x");
+    useAppStore.getState().setGlass(true);
+    expect(useAppStore.getState().glassPadding).toBe(false);
+  });
+
+  it("importPaint sets all fields", () => {
+    useAppStore.getState().importPaint({
+      canvas: CANVAS_TYPES[4]!,
+      title: "My Painting",
+      author: "Steve",
+      signed: true,
+      preprocessed: "pre.png",
+      processed: "proc.png",
+      format: "jop-2x",
+      glass: true,
+      sidesActive: true,
+    });
+    const s = useAppStore.getState();
+    expect(s.selectedCanvas).toBe(CANVAS_TYPES[4]!);
+    expect(s.title).toBe("My Painting");
+    expect(s.author).toBe("Steve");
+    expect(s.signed).toBe(true);
+    expect(s.preprocessedUrl).toBe("pre.png");
+    expect(s.quantizedUrl).toBe("proc.png");
+    expect(s.originalUrl).toBe("pre.png");
+    expect(s.paintFormat).toBe("jop-2x");
+    expect(s.glass).toBe(true);
+    expect(s.sidesActive).toBe(true);
+    expect(s.glassPadding).toBe(true);
+    expect(s.loading).toBe(false);
+  });
+
+  it("undo and redo work correctly", () => {
+    useAppStore.getState().setOriginal("first.png");
+    useAppStore.getState().setOriginal("second.png");
+    expect(useAppStore.getState().originalUrl).toBe("second.png");
+
+    useAppStore.getState().undo();
+    expect(useAppStore.getState().originalUrl).toBe("first.png");
+
+    useAppStore.getState().redo();
+    expect(useAppStore.getState().originalUrl).toBe("second.png");
+  });
+
+  it("undo does nothing when history is empty", () => {
+    useAppStore.getState().undo();
+    expect(useAppStore.getState().originalUrl).toBeNull();
+  });
+
+  it("redo does nothing when future is empty", () => {
+    useAppStore.getState().redo();
+    expect(useAppStore.getState().originalUrl).toBeNull();
+  });
+
+  it("new action clears future", () => {
+    useAppStore.getState().setOriginal("a.png");
+    useAppStore.getState().setOriginal("b.png");
+    useAppStore.getState().undo();
+    useAppStore.getState().setOriginal("c.png");
+    useAppStore.getState().redo();
+    expect(useAppStore.getState().originalUrl).toBe("c.png");
+  });
+
+  it("setPaintFormat with same canvas keeps it", () => {
+    const canvas1x = CANVAS_TYPES.find((c) => c.name === "1×1 Canvas")!;
+    useAppStore.getState().setCanvas(canvas1x);
+    useAppStore.getState().setPaintFormat("jop-1x");
+    expect(useAppStore.getState().selectedCanvas.name).toBe("1×1 Canvas");
+  });
+});
+
+describe("getProcessImageArgs", () => {
+  it("returns correct args tuple", () => {
+    useAppStore.getState().reset();
+    const s = useAppStore.getState();
+    const args = getProcessImageArgs(s);
+    expect(args).toHaveLength(8);
+    expect(args[0]).toBe(s.selectedCanvas);
+    expect(args[1]).toBe(s.quantMethod);
+    expect(args[2]).toBe(s.fitMode);
+    expect(args[3]).toEqual(s.paddingColor);
+    expect(args[4]).toBe(s.quantizationEnabled);
+    expect(args[5]).toEqual({
+      colors: s.adaptiveColorCount,
+      includeFixedPalette: s.includeFixedPalette,
+    });
+    expect(args[6]).toEqual({ filter: s.resizeFilter, unsharpAmount: s.unsharpAmount });
+    expect(args[7]).toBe(1);
+  });
+
+  it("returns paddingAlpha when glass is enabled", () => {
+    useAppStore.getState().setGlass(true);
+    useAppStore.getState().setPaddingAlpha(0.3);
+    const s = useAppStore.getState();
+    const args = getProcessImageArgs(s);
+    expect(args[7]).toBe(0.3);
   });
 });
