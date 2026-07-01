@@ -1,13 +1,12 @@
-import { useEffect, useRef } from "preact/hooks";
-import type { Dispatch } from "preact/hooks";
+import { useEffect, useRef, useCallback, useMemo } from "preact/hooks";
 import type { RefObject } from "preact";
-import type { AppState, AppAction } from "@/app/app-state";
 import type { QuantMethod, QuantizeOptions } from "@/core/quantize";
 import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/core/palette";
 import type { ResizeOptions } from "@/core/preprocess";
 import { imageDataToBlob } from "@/lib/utils";
-import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
+import { useAppStore, getProcessImageArgs } from "@/app/store";
+import { dispatchError } from "@/lib/helpers";
 
 export interface ImageProcessorWorkers {
   workerRef: RefObject<Worker | null>;
@@ -44,11 +43,7 @@ export type ProcessImageFn = (
   paddingAlpha?: number,
 ) => Promise<void>;
 
-export function useImageProcessor(
-  dispatch: Dispatch<AppAction>,
-  processImage: ProcessImageFn,
-  stateRef: RefObject<AppState>,
-): ImageProcessorWorkers {
+export function useImageProcessor(processImage: ProcessImageFn): ImageProcessorWorkers {
   const workerRef = useRef<Worker | null>(null);
   const importWorkerRef = useRef<Worker | null>(null);
   const originalImageRef = useRef<HTMLImageElement | null>(null);
@@ -70,6 +65,8 @@ export function useImageProcessor(
   } | null>(null);
   const displayDataUrlRef = useRef<string>("");
   const flushPendingResultRef = useRef<(() => void) | null>(null);
+  const processImageRef = useRef(processImage);
+  processImageRef.current = processImage;
 
   useEffect(() => {
     const worker = new Worker(new URL("../core/quantize.worker.ts", import.meta.url), {
@@ -85,34 +82,33 @@ export function useImageProcessor(
     importWorker.onmessage = (e: MessageEvent) => {
       const msg = e.data;
       if (msg.type === "error") {
-        dispatch({ type: "SET_ERROR", error: msg.message });
+        useAppStore.getState().setError(msg.message);
         return;
       }
 
       if (msg.type === "result") {
-        const blob = new Blob([new Uint8ClampedArray(msg.imageData).buffer], { type: "image/png" });
+        const blob = new Blob([msg.imageData.buffer], { type: "image/png" });
         const dataUrl = URL.createObjectURL(blob);
 
         const img = new Image();
         img.onload = () => {
           originalImageRef.current = img;
-          const prevUrl = stateRef.current?.originalUrl;
+          const prevUrl = useAppStore.getState().originalUrl;
           if (prevUrl) URL.revokeObjectURL(prevUrl);
-          dispatch({ type: "SET_ORIGINAL", url: dataUrl });
-          const s = stateRef.current;
-          if (!s) return;
-          void processImage(img, ...getProcessImageArgs(s));
+          useAppStore.getState().setOriginal(dataUrl);
+          const s = useAppStore.getState();
+          void processImageRef.current(img, ...getProcessImageArgs(s));
         };
         img.onerror = () => {
           URL.revokeObjectURL(dataUrl);
-          dispatch({ type: "SET_ERROR", error: "Failed to load parsed image" });
+          useAppStore.getState().setError("Failed to load parsed image");
         };
         img.src = dataUrl;
       }
     };
 
     importWorker.onerror = () => {
-      dispatchError(dispatch, new Error("Import worker failed"), "Import worker failed");
+      dispatchError(new Error("Import worker failed"), "Import worker failed");
     };
 
     async function flushPendingResult() {
@@ -122,16 +118,17 @@ export function useImageProcessor(
 
       try {
         const blob = await imageDataToBlob(pendingResult.processedData);
-        const prevProcessedUrl = stateRef.current?.quantizedUrl;
+        const prevProcessedUrl = useAppStore.getState().quantizedUrl;
         if (prevProcessedUrl) URL.revokeObjectURL(prevProcessedUrl);
-        dispatch({
-          type: "SET_RESULT",
-          preprocessed: displayDataUrl,
-          processed: URL.createObjectURL(blob),
-          adaptive: pendingResult.adaptivePalette ?? [],
-        });
+        useAppStore
+          .getState()
+          .setResult(
+            displayDataUrl,
+            URL.createObjectURL(blob),
+            pendingResult.adaptivePalette ?? [],
+          );
       } catch (err) {
-        dispatchError(dispatch, err, "Failed to finalize image result");
+        dispatchError(err, "Failed to finalize image result");
       }
       pendingResultRef.current = null;
       pendingProcessRef.current = null;
@@ -142,13 +139,13 @@ export function useImageProcessor(
     worker.onmessage = (e: MessageEvent) => {
       const msg = e.data;
       if (msg.type === "error") {
-        dispatch({ type: "SET_ERROR", error: msg.message });
+        useAppStore.getState().setError(msg.message);
         return;
       }
 
       if (msg.type === "displayed") {
         const displayImageData = new ImageData(
-          new Uint8ClampedArray(msg.imageData.data),
+          msg.imageData.data,
           msg.imageData.width,
           msg.imageData.height,
         );
@@ -165,7 +162,7 @@ export function useImageProcessor(
 
       if (msg.type === "quantized") {
         const quantized = new ImageData(
-          new Uint8ClampedArray(msg.quantized.data),
+          msg.quantized.data,
           msg.quantized.width,
           msg.quantized.height,
         );
@@ -185,7 +182,7 @@ export function useImageProcessor(
     };
 
     worker.onerror = () => {
-      dispatchError(dispatch, new Error("Image worker failed"), "Image worker failed");
+      dispatchError(new Error("Image worker failed"), "Image worker failed");
     };
 
     return () => {
@@ -194,18 +191,21 @@ export function useImageProcessor(
       importWorker.terminate();
       importWorkerRef.current = null;
     };
-  }, [processImage, stateRef, dispatch]);
+  }, []);
 
-  const flushPendingResult = () => flushPendingResultRef.current?.();
+  const flushPendingResult = useCallback(() => flushPendingResultRef.current?.(), []);
 
-  return {
-    workerRef,
-    importWorkerRef,
-    originalImageRef,
-    preprocessedDataRef,
-    quantizedDataRef,
-    pendingProcessRef,
-    pendingResultRef,
-    flushPendingResult,
-  };
+  return useMemo(
+    () => ({
+      workerRef,
+      importWorkerRef,
+      originalImageRef,
+      preprocessedDataRef,
+      quantizedDataRef,
+      pendingProcessRef,
+      pendingResultRef,
+      flushPendingResult,
+    }),
+    [flushPendingResult],
+  );
 }

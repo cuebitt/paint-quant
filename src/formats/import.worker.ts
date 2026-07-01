@@ -163,7 +163,11 @@ self.onmessage = async (e: MessageEvent<ParseRequest>) => {
         throw new Error(`Unknown message type: ${(msg as { type: string }).type}`);
     }
 
-    self.postMessage(response);
+    const transferable: Transferable[] = [];
+    if (response.imageData?.buffer) {
+      transferable.push(response.imageData.buffer);
+    }
+    (self as unknown as Worker).postMessage(response, transferable);
   } catch (err) {
     const response: ErrorResponse = {
       type: "error",

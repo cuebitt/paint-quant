@@ -1,11 +1,9 @@
 import { useCallback } from "preact/hooks";
-import type { Dispatch } from "preact/hooks";
 import type { ImageProcessorWorkers } from "@/hooks/useImageProcessor";
 import { dispatchError } from "@/lib/helpers";
 
 export function useClipboard(
   workers: ImageProcessorWorkers,
-  dispatch: Dispatch<{ type: "SET_ERROR"; error: string }>,
   startTimer: (name: string) => void,
   endTimer: (name: string) => number | null,
 ) {
@@ -25,11 +23,10 @@ export function useClipboard(
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     } catch {
       dispatchError(
-        dispatch,
         new Error("Clipboard failed"),
         "Failed to copy to clipboard. Check browser permissions.",
       );
     }
     endTimer("copy-to-clipboard");
-  }, [workers, dispatch, startTimer, endTimer]);
+  }, [workers, startTimer, endTimer]);
 }

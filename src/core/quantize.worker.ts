@@ -89,7 +89,7 @@ function handleDisplay(msg: DisplayRequest): DisplayResponse {
   return {
     type: "displayed",
     imageData: {
-      data: new Uint8ClampedArray(imageData.data),
+      data: imageData.data,
       width: imageData.width,
       height: imageData.height,
     },
@@ -99,7 +99,7 @@ function handleDisplay(msg: DisplayRequest): DisplayResponse {
 function handleQuantize(msg: QuantizeRequest): QuantizeResponse {
   const { imageData, method, options } = msg;
   const input = new ImageData(
-    new Uint8ClampedArray(imageData.data),
+    imageData.data as Uint8ClampedArray<ArrayBuffer>,
     imageData.width,
     imageData.height,
   );
@@ -109,7 +109,7 @@ function handleQuantize(msg: QuantizeRequest): QuantizeResponse {
   return {
     type: "quantized",
     quantized: {
-      data: new Uint8ClampedArray(result.quantized.data),
+      data: result.quantized.data,
       width: result.quantized.width,
       height: result.quantized.height,
     },
@@ -133,7 +133,14 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         throw new Error(`Unknown message type: ${(msg as { type: string }).type}`);
     }
 
-    self.postMessage(response);
+    const transferable: Transferable[] = [];
+    if ("imageData" in response && response.imageData?.data?.buffer) {
+      transferable.push(response.imageData.data.buffer);
+    }
+    if ("quantized" in response && response.quantized?.data?.buffer) {
+      transferable.push(response.quantized.data.buffer);
+    }
+    (self as unknown as Worker).postMessage(response, transferable);
   } catch (err) {
     const response: ErrorResponse = {
       type: "error",

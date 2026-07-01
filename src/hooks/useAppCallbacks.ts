@@ -1,10 +1,8 @@
-import { useCallback } from "preact/hooks";
-import type { Dispatch } from "preact/hooks";
-import type { RefObject } from "preact";
-import type { AppState, AppAction } from "@/app/app-state";
+import { useCallback, useRef } from "preact/hooks";
 import type { ProcessImageFn, ImageProcessorWorkers } from "@/hooks/useImageProcessor";
+import { useAppStore, getProcessImageArgs } from "@/app/store";
 import { importPaintFile, exportPaintFile, exportPng } from "@/lib/file-io";
-import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
+import { dispatchError } from "@/lib/helpers";
 
 const IMPORT_HANDLERS: Record<
   string,
@@ -18,13 +16,13 @@ const IMPORT_HANDLERS: Record<
   ".pixil": { type: "parsePixil", extract: (r) => ({ text: r.result }), text: true },
 };
 
-export function useAppCallbacks(
-  dispatch: Dispatch<AppAction>,
-  state: AppState,
-  stateRef: RefObject<AppState>,
-  processImage: ProcessImageFn,
-  workers: ImageProcessorWorkers,
-) {
+export function useAppCallbacks(processImage: ProcessImageFn, workers: ImageProcessorWorkers) {
+  const processImageRef = useRef(processImage);
+  processImageRef.current = processImage;
+
+  const workersRef = useRef(workers);
+  workersRef.current = workers;
+
   const readIntoImportWorker = useCallback(
     (
       file: File,
@@ -32,25 +30,20 @@ export function useAppCallbacks(
       extract: (reader: FileReader) => Record<string, unknown>,
       asText = false,
     ) => {
-      dispatch({ type: "SET_LOADING", loading: true });
+      useAppStore.getState().setLoading(true);
       const reader = new FileReader();
       reader.onload = () => {
-        if (!workers.importWorkerRef.current) {
+        if (!workersRef.current.importWorkerRef.current) {
           dispatchError(
-            dispatch,
             new Error("Import worker not initialized"),
             "Import worker not initialized",
           );
           return;
         }
-        workers.importWorkerRef.current.postMessage({ type, ...extract(reader) });
+        workersRef.current.importWorkerRef.current.postMessage({ type, ...extract(reader) });
       };
       reader.onerror = () => {
-        dispatchError(
-          dispatch,
-          new Error(`Failed to read ${file.name}`),
-          `Failed to read ${file.name}`,
-        );
+        dispatchError(new Error(`Failed to read ${file.name}`), `Failed to read ${file.name}`);
       };
       if (asText) {
         reader.readAsText(file);
@@ -58,12 +51,12 @@ export function useAppCallbacks(
         reader.readAsArrayBuffer(file);
       }
     },
-    [dispatch, workers],
+    [],
   );
 
   const handleImportPaintFile = useCallback(
-    (file: File) => importPaintFile(file, dispatch, workers, stateRef),
-    [dispatch, workers, stateRef],
+    (file: File) => importPaintFile(file, workersRef.current),
+    [],
   );
 
   const handleUpload = useCallback(
@@ -79,44 +72,35 @@ export function useAppCallbacks(
         }
       }
 
-      dispatch({ type: "SET_LOADING", loading: true });
+      useAppStore.getState().setLoading(true);
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
         img.onload = () => {
-          workers.originalImageRef.current = img;
-          dispatch({ type: "SET_ORIGINAL", url: reader.result as string });
-          const s = stateRef.current;
-          if (!s) return;
-          void processImage(img, ...getProcessImageArgs(s));
+          workersRef.current.originalImageRef.current = img;
+          useAppStore.getState().setOriginal(reader.result as string);
+          const s = useAppStore.getState();
+          void processImageRef.current(img, ...getProcessImageArgs(s));
         };
         img.onerror = () => {
-          dispatchError(
-            dispatch,
-            new Error(`Failed to load ${file.name}`),
-            `Failed to load ${file.name}`,
-          );
+          dispatchError(new Error(`Failed to load ${file.name}`), `Failed to load ${file.name}`);
         };
         img.src = reader.result as string;
       };
       reader.onerror = () => {
-        dispatchError(
-          dispatch,
-          new Error(`Failed to read ${file.name}`),
-          `Failed to read ${file.name}`,
-        );
+        dispatchError(new Error(`Failed to read ${file.name}`), `Failed to read ${file.name}`);
       };
       reader.readAsDataURL(file);
     },
-    [processImage, handleImportPaintFile, workers, stateRef, dispatch, readIntoImportWorker],
+    [handleImportPaintFile, readIntoImportWorker],
   );
 
-  const handleExportPaintFile = useCallback(
-    () => exportPaintFile(workers, state),
-    [state, workers],
-  );
+  const handleExportPaintFile = useCallback(() => {
+    const s = useAppStore.getState();
+    return exportPaintFile(workersRef.current, s);
+  }, []);
 
-  const handleExportPng = useCallback(() => exportPng(workers, dispatch), [workers, dispatch]);
+  const handleExportPng = useCallback(() => exportPng(workersRef.current), []);
 
   return { handleUpload, handleExportPaintFile, handleExportPng };
 }

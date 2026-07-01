@@ -1,4 +1,3 @@
-import pica from "pica";
 import type { CanvasType, ImageFitMode } from "@/types";
 import type { RGB } from "@/core/palette";
 import { computeScale, rgbString } from "@/core/image-utils";
@@ -12,7 +11,31 @@ export interface ResizeOptions {
   unsharpAmount: number;
 }
 
-const picaInstance = pica();
+let picaPromise: Promise<typeof import("pica")> | null = null;
+
+async function getPica() {
+  if (!picaPromise) {
+    picaPromise = import("pica");
+  }
+  const mod = await picaPromise;
+  return mod.default();
+}
+
+const pooledCanvases: HTMLCanvasElement[] = [];
+
+function acquireCanvas(w: number, h: number): HTMLCanvasElement {
+  let canvas = pooledCanvases.pop();
+  if (!canvas) {
+    canvas = document.createElement("canvas");
+  }
+  canvas.width = w;
+  canvas.height = h;
+  return canvas;
+}
+
+function releaseCanvas(canvas: HTMLCanvasElement) {
+  if (pooledCanvases.length < 4) pooledCanvases.push(canvas);
+}
 
 export const preprocessImageForCanvas = async (
   image: HTMLImageElement,
@@ -36,30 +59,34 @@ export const preprocessImageForCanvas = async (
   const offsetY = (canvasType.height - scaledHeight) / 2;
 
   if (resizeOptions.filter === "nearest") {
-    const tempCanvas = document.createElement("canvas");
+    const tempCanvas = acquireCanvas(canvasType.width, canvasType.height);
     const tempCtx = tempCanvas.getContext("2d");
-    if (!tempCtx) throw new Error("Could not get 2D context for nearest-neighbor canvas");
-    tempCanvas.width = canvasType.width;
-    tempCanvas.height = canvasType.height;
+    if (!tempCtx) {
+      releaseCanvas(tempCanvas);
+      throw new Error("Could not get 2D context for nearest-neighbor canvas");
+    }
 
     tempCtx.imageSmoothingEnabled = false;
     tempCtx.fillStyle = rgbString(paddingColor, paddingAlpha);
     tempCtx.fillRect(0, 0, canvasType.width, canvasType.height);
     tempCtx.drawImage(image, offsetX, offsetY, scaledWidth, scaledHeight);
 
-    return tempCtx.getImageData(0, 0, canvasType.width, canvasType.height);
+    const result = tempCtx.getImageData(0, 0, canvasType.width, canvasType.height);
+    releaseCanvas(tempCanvas);
+    return result;
   }
 
-  const sourceCanvas = document.createElement("canvas");
-  sourceCanvas.width = image.width;
-  sourceCanvas.height = image.height;
+  const picaInstance = await getPica();
+
+  const sourceCanvas = acquireCanvas(image.width, image.height);
   const sourceCtx = sourceCanvas.getContext("2d");
-  if (!sourceCtx) throw new Error("Could not get 2D context for source canvas");
+  if (!sourceCtx) {
+    releaseCanvas(sourceCanvas);
+    throw new Error("Could not get 2D context for source canvas");
+  }
   sourceCtx.drawImage(image, 0, 0);
 
-  const scaledCanvas = document.createElement("canvas");
-  scaledCanvas.width = scaledWidth;
-  scaledCanvas.height = scaledHeight;
+  const scaledCanvas = acquireCanvas(scaledWidth, scaledHeight);
 
   await picaInstance.resize(sourceCanvas, scaledCanvas, {
     filter: resizeOptions.filter,
@@ -68,15 +95,23 @@ export const preprocessImageForCanvas = async (
     unsharpThreshold: 1,
   });
 
-  const finalCanvas = document.createElement("canvas");
-  finalCanvas.width = canvasType.width;
-  finalCanvas.height = canvasType.height;
+  releaseCanvas(sourceCanvas);
+
+  const finalCanvas = acquireCanvas(canvasType.width, canvasType.height);
   const finalCtx = finalCanvas.getContext("2d");
-  if (!finalCtx) throw new Error("Could not get 2D context for scaled output canvas");
+  if (!finalCtx) {
+    releaseCanvas(scaledCanvas);
+    releaseCanvas(finalCanvas);
+    throw new Error("Could not get 2D context for scaled output canvas");
+  }
 
   finalCtx.fillStyle = rgbString(paddingColor, paddingAlpha);
   finalCtx.fillRect(0, 0, canvasType.width, canvasType.height);
   finalCtx.drawImage(scaledCanvas, offsetX, offsetY);
 
-  return finalCtx.getImageData(0, 0, canvasType.width, canvasType.height);
+  releaseCanvas(scaledCanvas);
+
+  const result = finalCtx.getImageData(0, 0, canvasType.width, canvasType.height);
+  releaseCanvas(finalCanvas);
+  return result;
 };

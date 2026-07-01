@@ -1,3 +1,4 @@
+import { memo } from "preact/compat";
 import { ImageDisplay } from "@/components/ImageDisplay";
 
 interface ImageComparisonProps {
@@ -11,7 +12,7 @@ interface ImageComparisonProps {
   showTransparencyGrid: boolean;
 }
 
-export function ImageComparison({
+export const ImageComparison = memo(function ImageComparison({
   originalUrl,
   quantizedUrl,
   showGrid,
@@ -46,4 +47,4 @@ export function ImageComparison({
       />
     </div>
   );
-}
+});

@@ -1,7 +1,5 @@
-import type { Dispatch } from "preact/hooks";
-import type { RefObject } from "preact";
-import type { AppState, AppAction } from "@/app/app-state";
 import type { ImageProcessorWorkers } from "@/hooks/useImageProcessor";
+import { useAppStore } from "@/app/store";
 import { CANVAS_TYPES } from "@/types";
 import {
   writePaintFile,
@@ -23,6 +21,17 @@ function generateShortId(): string {
     .slice(0, 8);
 }
 
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function sanitizeForFilename(s: string): string {
   return s
     .replace(/[^a-zA-Z0-9 _-]/g, "")
@@ -30,13 +39,8 @@ function sanitizeForFilename(s: string): string {
     .slice(0, 48);
 }
 
-export function importPaintFile(
-  file: File,
-  dispatch: Dispatch<AppAction>,
-  workers: ImageProcessorWorkers,
-  stateRef: RefObject<AppState>,
-) {
-  dispatch({ type: "SET_LOADING", loading: true });
+export function importPaintFile(file: File, workers: ImageProcessorWorkers) {
+  useAppStore.getState().setLoading(true);
   const reader = new FileReader();
   reader.onload = async () => {
     try {
@@ -88,11 +92,10 @@ export function importPaintFile(
       const quantizedBlob = await imageDataToBlob(imageData);
       const quantizedUrl = URL.createObjectURL(quantizedBlob);
 
-      const prevOriginal = stateRef.current?.originalUrl;
-      const prevQuantized = stateRef.current?.quantizedUrl;
+      const prevOriginal = useAppStore.getState().originalUrl;
+      const prevQuantized = useAppStore.getState().quantizedUrl;
 
-      dispatch({
-        type: "IMPORT_PAINT",
+      useAppStore.getState().importPaint({
         canvas: canvasType,
         title: painting.title,
         author: painting.author,
@@ -107,22 +110,18 @@ export function importPaintFile(
       if (prevOriginal) URL.revokeObjectURL(prevOriginal);
       if (prevQuantized) URL.revokeObjectURL(prevQuantized);
     } catch (err) {
-      dispatchError(dispatch, err, `Failed to import ${file.name}`);
+      dispatchError(err, `Failed to import ${file.name}`);
     }
   };
   reader.onerror = () => {
-    dispatchError(
-      dispatch,
-      new Error(`Failed to read ${file.name}`),
-      `Failed to read ${file.name}`,
-    );
+    dispatchError(new Error(`Failed to read ${file.name}`), `Failed to read ${file.name}`);
   };
   reader.readAsArrayBuffer(file);
 }
 
 export async function exportPaintFile(
   workers: ImageProcessorWorkers,
-  state: AppState,
+  state: ReturnType<typeof useAppStore.getState>,
 ): Promise<void> {
   if (!workers.quantizedDataRef.current) return;
 
@@ -230,17 +229,10 @@ export async function exportPaintFile(
   }
 
   const blob = new Blob([paintBuffer as BlobPart], { type: "application/octet-stream" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, filename);
 }
 
-export function exportPng(workers: ImageProcessorWorkers, dispatch: Dispatch<AppAction>): void {
+export function exportPng(workers: ImageProcessorWorkers): void {
   if (!workers.quantizedDataRef.current) return;
 
   const { quantized } = workers.quantizedDataRef.current;
@@ -253,18 +245,11 @@ export function exportPng(workers: ImageProcessorWorkers, dispatch: Dispatch<App
 
   canvas.toBlob((blob) => {
     if (!blob) {
-      dispatch({ type: "SET_ERROR", error: "Failed to export PNG" });
+      useAppStore.getState().setError("Failed to export PNG");
       return;
     }
     const timestamp = Date.now().toString(36);
     const name = `${crypto.randomUUID()}_${timestamp}`;
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `painting_${name}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `painting_${name}.png`);
   }, "image/png");
 }

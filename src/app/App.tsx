@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "preact/hooks";
+import { useEffect, useRef, useCallback, useMemo } from "preact/hooks";
 import { AppHeader } from "@/components/AppHeader";
 import { UploadDropzone } from "@/components/UploadDropzone";
 import { ResultsToolbar } from "@/components/ResultsToolbar";
@@ -7,30 +7,30 @@ import { PalettesSection } from "@/components/PalettesSection";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useImageProcessor, type ProcessImageFn } from "@/hooks/useImageProcessor";
 import { useAppCallbacks } from "@/hooks/useAppCallbacks";
-import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import { useClipboard } from "@/hooks/useClipboard";
 import { preprocessImageForCanvas } from "@/core/preprocess";
-import { dispatchError, getProcessImageArgs } from "@/lib/helpers";
+import { useAppStore, getProcessImageArgs } from "@/app/store";
+import { findClosestCanvas } from "@/types";
+import { dispatchError } from "@/lib/helpers";
 
 function App() {
-  const { state, dispatch, undo, redo } = useUndoRedo();
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const state = useAppStore();
+  const { undo, redo } = state;
 
-  useLocalStorage(state, "dark");
+  useLocalStorage("dark");
 
   const { startTimer, endTimer } = usePerformanceMonitor();
 
   const toggleGrid = useCallback(() => {
-    dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid });
-  }, [state.showGrid, dispatch]);
+    useAppStore.getState().setShowGrid(!useAppStore.getState().showGrid);
+  }, []);
 
   const toggleQuantize = useCallback(() => {
-    dispatch({ type: "SET_QUANTIZATION_ENABLED", enabled: !state.quantizationEnabled });
-  }, [state.quantizationEnabled, dispatch]);
+    useAppStore.getState().setQuantizationEnabled(!useAppStore.getState().quantizationEnabled);
+  }, []);
 
   const processImage = useCallback<ProcessImageFn>(
     async (
@@ -47,11 +47,7 @@ function App() {
       try {
         const workers = workersRef.current;
         if (!workers?.workerRef.current) {
-          dispatchError(
-            dispatch,
-            new Error("Image processor not ready"),
-            "Image processor not ready",
-          );
+          dispatchError(new Error("Image processor not ready"), "Image processor not ready");
           return;
         }
 
@@ -84,16 +80,17 @@ function App() {
         });
 
         if (quantEnabled) {
-          workers.workerRef.current.postMessage({
-            type: "quantize",
+          const msg = {
+            type: "quantize" as const,
             imageData: {
-              data: new Uint8ClampedArray(preprocessedData.data),
+              data: preprocessedData.data,
               width: preprocessedData.width,
               height: preprocessedData.height,
             },
             method,
             options: quantOptions,
-          });
+          };
+          workers.workerRef.current.postMessage(msg, [preprocessedData.data.buffer]);
         } else {
           workers.quantizedDataRef.current = { quantized: preprocessedData, adaptivePalette: [] };
           workers.pendingResultRef.current = {
@@ -103,27 +100,24 @@ function App() {
           workers.flushPendingResult();
         }
       } catch (err) {
-        dispatchError(dispatch, err, "Failed to process image");
+        dispatchError(err, "Failed to process image");
       } finally {
         endTimer("process-image");
       }
     },
-    [endTimer, dispatch],
+    [endTimer],
   );
 
-  const workers = useImageProcessor(dispatch, processImage, stateRef);
+  const workers = useImageProcessor(processImage);
   const workersRef = useRef(workers);
   workersRef.current = workers;
 
   const { handleUpload, handleExportPaintFile, handleExportPng } = useAppCallbacks(
-    dispatch,
-    state,
-    stateRef,
     processImage,
     workers,
   );
 
-  const handleCopyToClipboard = useClipboard(workers, dispatch, startTimer, endTimer);
+  const handleCopyToClipboard = useClipboard(workers, startTimer, endTimer);
 
   useKeyboardShortcuts({
     "ctrl+z": undo,
@@ -136,13 +130,25 @@ function App() {
     "ctrl+shift+c": handleCopyToClipboard,
   });
 
+  const reprocessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (workers.originalImageRef.current && stateRef.current.originalUrl) {
-      dispatch({ type: "SET_LOADING", loading: true });
-      const s = stateRef.current;
-      startTimer("process-image");
-      void processImage(workers.originalImageRef.current, ...getProcessImageArgs(s));
+    if (reprocessTimeoutRef.current !== null) {
+      clearTimeout(reprocessTimeoutRef.current);
     }
+    reprocessTimeoutRef.current = setTimeout(() => {
+      reprocessTimeoutRef.current = null;
+      if (workers.originalImageRef.current && useAppStore.getState().originalUrl) {
+        useAppStore.getState().setLoading(true);
+        const s = useAppStore.getState();
+        startTimer("process-image");
+        void processImage(workers.originalImageRef.current, ...getProcessImageArgs(s));
+      }
+    }, 50);
+    return () => {
+      if (reprocessTimeoutRef.current !== null) {
+        clearTimeout(reprocessTimeoutRef.current);
+      }
+    };
   }, [
     state.selectedCanvas,
     state.quantMethod,
@@ -154,13 +160,15 @@ function App() {
     state.includeFixedPalette,
     state.resizeFilter,
     state.unsharpAmount,
-    dispatch,
     processImage,
     workers.originalImageRef,
     startTimer,
   ]);
 
-  const hasResults = state.originalUrl && state.preprocessedUrl && state.quantizedUrl;
+  const hasResults = useMemo(
+    () => state.originalUrl && state.preprocessedUrl && state.quantizedUrl,
+    [state.originalUrl, state.preprocessedUrl, state.quantizedUrl],
+  );
 
   return (
     <TooltipProvider>
@@ -189,61 +197,84 @@ function App() {
             <div className="flex flex-col gap-8">
               <ResultsToolbar
                 selectedCanvas={state.selectedCanvas}
-                onCanvasChange={(canvas) => dispatch({ type: "SET_CANVAS", canvas })}
+                onCanvasChange={(canvas) => useAppStore.getState().setCanvas(canvas)}
                 paddingColorPreview={state.paddingColorPreview}
                 paddingAlpha={state.paddingAlpha}
                 onPaddingPreview={(color, alpha) =>
-                  dispatch({ type: "SET_PADDING_PREVIEW", color, alpha })
+                  useAppStore.getState().setPaddingColorPreview(color, alpha)
                 }
                 onPaddingCommit={(color, alpha) =>
-                  dispatch({ type: "SET_PADDING_COLOR", color, alpha })
+                  useAppStore.getState().setPaddingColor(color, alpha)
                 }
                 showGrid={state.showGrid}
-                onToggleGrid={() => dispatch({ type: "SET_SHOW_GRID", show: !state.showGrid })}
+                onToggleGrid={toggleGrid}
                 quantMethod={state.quantMethod}
-                onQuantMethodChange={(method) => dispatch({ type: "SET_QUANT_METHOD", method })}
+                onQuantMethodChange={(method) => useAppStore.getState().setQuantMethod(method)}
                 fitMode={state.fitMode}
-                onFitModeChange={(mode) => dispatch({ type: "SET_FIT_MODE", mode })}
+                onFitModeChange={(mode) => useAppStore.getState().setFitMode(mode)}
                 quantizationEnabled={state.quantizationEnabled}
                 onQuantizationEnabledChange={(enabled) =>
-                  dispatch({ type: "SET_QUANTIZATION_ENABLED", enabled })
+                  useAppStore.getState().setQuantizationEnabled(enabled)
                 }
                 adaptiveColorCount={state.adaptiveColorCount}
                 onAdaptiveColorCountChange={(count) =>
-                  dispatch({ type: "SET_ADAPTIVE_COLOR_COUNT", count })
+                  useAppStore.getState().setAdaptiveColorCount(count)
                 }
                 includeFixedPalette={state.includeFixedPalette}
                 onIncludeFixedPaletteChange={(include) =>
-                  dispatch({ type: "SET_INCLUDE_FIXED_PALETTE", include })
+                  useAppStore.getState().setIncludeFixedPalette(include)
                 }
                 resizeFilter={state.resizeFilter}
-                onResizeFilterChange={(filter) => dispatch({ type: "SET_RESIZE_FILTER", filter })}
+                onResizeFilterChange={(filter) => useAppStore.getState().setResizeFilter(filter)}
                 unsharpAmount={state.unsharpAmount}
-                onUnsharpAmountChange={(amount) => dispatch({ type: "SET_UNSHARP_AMOUNT", amount })}
+                onUnsharpAmountChange={(amount) => useAppStore.getState().setUnsharpAmount(amount)}
                 title={state.title}
-                onTitleChange={(title) => dispatch({ type: "SET_TITLE", title })}
+                onTitleChange={(title) => useAppStore.getState().setTitle(title)}
                 author={state.author}
-                onAuthorChange={(author) => dispatch({ type: "SET_AUTHOR", author })}
+                onAuthorChange={(author) => useAppStore.getState().setAuthor(author)}
                 signed={state.signed}
-                onSignedChange={(signed) => dispatch({ type: "SET_SIGNED", signed })}
+                onSignedChange={(signed) => useAppStore.getState().setSigned(signed)}
                 embedOriginalImage={state.embedOriginalImage}
                 onEmbedOriginalImageChange={(embed) =>
-                  dispatch({ type: "SET_EMBED_ORIGINAL_IMAGE", embed })
+                  useAppStore.getState().setEmbedOriginalImage(embed)
                 }
                 paintFormat={state.paintFormat}
-                onPaintFormatChange={(format) => dispatch({ type: "SET_PAINT_FORMAT", format })}
+                onPaintFormatChange={(format) =>
+                  useAppStore.getState()._set(
+                    {
+                      paintFormat: format,
+                      selectedCanvas: findClosestCanvas(
+                        useAppStore.getState().selectedCanvas,
+                        format,
+                      ),
+                      glassPadding: useAppStore.getState().glass && format === "jop-2x",
+                    },
+                    "setPaintFormat",
+                  )
+                }
                 glass={state.glass}
-                onGlassChange={(glass) => dispatch({ type: "SET_GLASS", glass })}
+                onGlassChange={(glass) =>
+                  useAppStore.getState()._set(
+                    {
+                      glass,
+                      glassPadding: glass && useAppStore.getState().paintFormat === "jop-2x",
+                      paddingAlpha: glass ? 0 : 1,
+                    },
+                    "setGlass",
+                  )
+                }
                 sidesActive={state.sidesActive}
-                onSidesActiveChange={(active) => dispatch({ type: "SET_SIDES_ACTIVE", active })}
+                onSidesActiveChange={(active) =>
+                  useAppStore.getState()._set({ sidesActive: active }, "setSidesActive")
+                }
                 showTransparencyGrid={state.showTransparencyGrid}
                 onShowTransparencyGridChange={(show) =>
-                  dispatch({ type: "SET_SHOW_TRANSPARENCY_GRID", show })
+                  useAppStore.getState().setShowTransparencyGrid(show)
                 }
                 loading={state.loading}
                 onExportPaint={handleExportPaintFile}
                 onExportPng={handleExportPng}
-                onReset={() => dispatch({ type: "RESET" })}
+                onReset={() => useAppStore.getState().reset()}
               />
               <ImageComparison
                 originalUrl={state.originalUrl}

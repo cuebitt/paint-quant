@@ -1,4 +1,5 @@
 import { useState } from "preact/hooks";
+import { memo } from "preact/compat";
 import type { RGB } from "@/core/palette";
 import { FIXED_PALETTE } from "@/core/palette";
 import { PaletteDisplay } from "@/components/PaletteDisplay";
@@ -12,7 +13,10 @@ interface PalettesSectionProps {
   adaptiveColorCount: number;
 }
 
-export function PalettesSection({ adaptivePalette, adaptiveColorCount }: PalettesSectionProps) {
+export const PalettesSection = memo(function PalettesSection({
+  adaptivePalette,
+  adaptiveColorCount,
+}: PalettesSectionProps) {
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(adaptivePalette.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -56,4 +60,4 @@ export function PalettesSection({ adaptivePalette, adaptiveColorCount }: Palette
       </div>
     </div>
   );
-}
+});
