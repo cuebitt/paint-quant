@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from "preact/hooks";
+import { useCallback, useContext, useEffect, useMemo, useState } from "preact/hooks";
 import { createContext } from "preact";
 import type { ComponentChildren } from "preact";
 
@@ -45,6 +45,13 @@ function parseTheme(value: string | null, fallback: Theme): Theme {
   return fallback;
 }
 
+function resolveMode(theme: Theme): "light" | "dark" {
+  if (theme === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return theme;
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -70,20 +77,25 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
 
-    let resolved: "light" | "dark";
+    const apply = () => {
+      root.classList.remove("light", "dark");
+      const resolved = resolveMode(theme);
+      root.classList.add(resolved);
+
+      const hue = accentColor[resolved].match(/oklch\([\d.]+ [\d.]+ ([\d.]+)/)?.[1] ?? "55";
+      root.style.setProperty("--accent", accentColor[resolved]);
+      root.style.setProperty("--accent-hue", hue);
+    };
+
+    apply();
+
     if (theme === "system") {
-      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    } else {
-      resolved = theme;
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = () => apply();
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
     }
-
-    root.classList.add(resolved);
-
-    const hue = accentColor[resolved].match(/oklch\([\d.]+ [\d.]+ ([\d.]+)/)?.[1] ?? "55";
-    root.style.setProperty("--accent", accentColor[resolved]);
-    root.style.setProperty("--accent-hue", hue);
   }, [theme, accentColor]);
 
   const setAccentColor = useCallback(
@@ -102,17 +114,25 @@ export function ThemeProvider({
     [storageKey],
   );
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+  const handleSetTheme = useCallback(
+    (newTheme: Theme) => {
+      localStorage.setItem(storageKey, newTheme);
+      setTheme(newTheme);
     },
-    accentColor,
-    setAccentColor,
-    showTooltips,
-    setShowTooltips,
-  };
+    [storageKey],
+  );
+
+  const value = useMemo(
+    () => ({
+      theme,
+      setTheme: handleSetTheme,
+      accentColor,
+      setAccentColor,
+      showTooltips,
+      setShowTooltips,
+    }),
+    [theme, handleSetTheme, accentColor, setAccentColor, showTooltips, setShowTooltips],
+  );
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
